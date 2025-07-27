@@ -36,6 +36,7 @@
             display: block;
             width: 1000px;
             height: 500px;
+            filter: brightness(1.2);
             /*filter: grayscale();*/
         }
         
@@ -78,6 +79,30 @@
             border-radius: 3px;
             border: 1px solid #ccc;
         }
+        
+        /* Minimal mode styles */
+        .minimal-mode h1,
+        .minimal-mode .info,
+        .minimal-mode .legend {
+            display: none;
+        }
+        
+        .minimal-mode body {
+            padding: 0;
+            margin: 0;
+        }
+        
+        .minimal-mode .container {
+            margin: 0;
+            max-width: none;
+            text-align: left;
+        }
+        
+        .minimal-mode .map-container {
+            border-radius: 0;
+            border: none;
+            box-shadow: none;
+        }
     </style>
 </head>
 <body>
@@ -114,6 +139,18 @@
     </div>
 
     <script>
+        // Check for minimal mode URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const isMinimal = urlParams.has('minimal') || hashParams.has('minimal') || 
+                         window.location.search.includes('minimal') || 
+                         window.location.hash.includes('minimal');
+        
+        // Apply minimal mode if requested
+        if (isMinimal) {
+            document.documentElement.classList.add('minimal-mode');
+        }
+        
         const canvas = document.getElementById('mapCanvas');
         const ctx = canvas.getContext('2d');
         const width = canvas.width;
