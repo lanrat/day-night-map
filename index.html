@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Day/Night World Map</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #001122;
+            color: white;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+        }
+        
+        .map-container {
+            position: relative;
+            display: inline-block;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        
+        #worldMap {
+            display: block;
+            width: 1000px;
+            height: 500px;
+            filter: grayscale();
+        }
+        
+        #mapCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 1000px;
+            height: 500px;
+            pointer-events: none;
+        }
+        
+        .info {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #002244;
+            border-radius: 5px;
+            display: inline-block;
+        }
+        
+        .legend {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            border: 1px solid #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Real-Time Day/Night World Map</h1>
+        <div class="map-container">
+            <img id="worldMap" src="https://upload.wikimedia.org/wikipedia/commons/8/83/Equirectangular_projection_SW.jpg" alt="World Map" crossorigin="anonymous">
+            <canvas id="mapCanvas" width="1000" height="500"></canvas>
+        </div>
+        
+        <div class="info">
+            <div id="currentTime"></div>
+            <div id="sunPosition"></div>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: rgba(0,0,50,0.7);"></div>
+                <span>Night</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: rgba(0,0,50,0.4);"></div>
+                <span>Twilight</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: rgba(255,255,255,0.3);"></div>
+                <span>Terminator Line</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #FFD700;"></div>
+                <span>☀ Sun Position</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('mapCanvas');
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+
+        // Convert latitude/longitude to canvas coordinates (Mercator projection)
+        function latLngToPixel(lat, lng) {
+            const x = (lng + 180) * (width / 360);
+            const latRad = lat * Math.PI / 180;
+            const mercatorN = Math.log(Math.tan((Math.PI / 4) + (latRad / 2)));
+            const y = (height / 2) - (width * mercatorN / (2 * Math.PI));
+            return { x, y };
+        }
+
+        // Calculate solar position based on date and time
+        function getSolarPosition(date) {
+            // Get Julian day number
+            const a = Math.floor((14 - (date.getUTCMonth() + 1)) / 12);
+            const y = date.getUTCFullYear() - a;
+            const m = (date.getUTCMonth() + 1) + 12 * a - 3;
+            const jdn = date.getUTCDate() + Math.floor((153 * m + 2) / 5) + 365 * y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) - 32045;
+            
+            // Days since J2000.0
+            const n = jdn - 2451545.0 + (date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600) / 24;
+            
+            // Mean longitude of the Sun
+            const L = (280.460 + 0.9856474 * n) % 360;
+            
+            // Mean anomaly
+            const g = ((357.528 + 0.9856003 * n) % 360) * Math.PI / 180;
+            
+            // Ecliptic longitude
+            const lambda = (L + 1.915 * Math.sin(g) + 0.020 * Math.sin(2 * g)) * Math.PI / 180;
+            
+            // Solar declination
+            const declination = Math.asin(Math.sin(23.439 * Math.PI / 180) * Math.sin(lambda)) * 180 / Math.PI;
+            
+            // Greenwich Hour Angle - where the sun is directly overhead
+            const gha = (280.46061837 + 360.98564736629 * n + 0.000387933 * n * n / 38710000) % 360;
+            
+            // Solar longitude (where sun is at zenith)
+            const sunLongitude = -gha; // Negative because we want where sun is overhead
+            
+            return {
+                lat: declination,
+                lng: sunLongitude > 180 ? sunLongitude - 360 : sunLongitude < -180 ? sunLongitude + 360 : sunLongitude
+            };
+        }
+
+        // Calculate solar elevation angle
+        function getSolarElevation(lat, lng, sunLat, sunLng) {
+            const latRad = lat * Math.PI / 180;
+            const sunLatRad = sunLat * Math.PI / 180;
+            const lngDiff = (lng - sunLng) * Math.PI / 180;
+            
+            const elevation = Math.asin(
+                Math.sin(latRad) * Math.sin(sunLatRad) +
+                Math.cos(latRad) * Math.cos(sunLatRad) * Math.cos(lngDiff)
+            ) * 180 / Math.PI;
+            
+            return elevation;
+        }
+
+        // Calculate day/night terminator line points
+        function getTerminatorPoints(sunPos) {
+            const points = [];
+            for (let lng = -180; lng <= 180; lng += 1) {
+                // Calculate terminator latitude using spherical trigonometry
+                const lngDiff = (lng - sunPos.lng) * Math.PI / 180;
+                const sunLatRad = sunPos.lat * Math.PI / 180;
+                
+                // Terminator latitude where sun is on horizon (elevation = 0)
+                const lat = Math.atan(-Math.cos(lngDiff) / Math.tan(sunLatRad)) * 180 / Math.PI;
+                
+                if (lat >= -85 && lat <= 85 && !isNaN(lat)) {
+                    const pixel = latLngToPixel(lat, lng);
+                    if (pixel.y >= 0 && pixel.y <= height) {
+                        points.push(pixel);
+                    }
+                }
+            }
+            return points;
+        }
+
+        // Main drawing function
+        function drawMap() {
+            const now = new Date();
+            const sunPos = getSolarPosition(now);
+            
+            // Clear canvas (make transparent for overlay)
+            ctx.clearRect(0, 0, width, height);
+            
+            // Draw night overlay with smooth gradient using optimized approach
+            const pixelSize = 2; // Balanced performance and quality
+            
+            // Use image data for smooth pixel manipulation
+            const imageData = ctx.createImageData(width, height);
+            const data = imageData.data;
+            
+            for (let x = 0; x < width; x += pixelSize) {
+                for (let y = 0; y < height; y += pixelSize) {
+                    // Convert pixel back to lat/lng
+                    const lng = (x / width) * 360 - 180;
+                    const mercatorN = (height / 2 - y) * 2 * Math.PI / width;
+                    const lat = Math.atan(Math.sinh(mercatorN)) * 180 / Math.PI;
+                    
+                    // Skip invalid latitudes
+                    if (lat > 85 || lat < -85) continue;
+                    
+                    const elevation = getSolarElevation(lat, lng, sunPos.lat, sunPos.lng);
+                    
+                    // Create smooth gradient with interpolated values
+                    let alpha = 0;
+                    if (elevation < -18) {
+                        alpha = 0.8; // Deep night
+                    } else if (elevation < -12) {
+                        // Smooth transition from astronomical to deep night
+                        const factor = (elevation + 18) / 6;
+                        alpha = 0.8 - (0.1 * factor);
+                    } else if (elevation < -6) {
+                        // Smooth transition from nautical to astronomical twilight
+                        const factor = (elevation + 12) / 6;
+                        alpha = 0.7 - (0.2 * factor);
+                    } else if (elevation < 0) {
+                        // Smooth transition from civil twilight to day
+                        const factor = (elevation + 6) / 6;
+                        alpha = 0.5 - (0.2 * factor);
+                    } else if (elevation < 3) {
+                        // Very light twilight near horizon
+                        const factor = elevation / 3;
+                        alpha = 0.3 - (0.3 * factor);
+                    }
+                    
+                    // Apply to image data for smoother rendering
+                    if (alpha > 0) {
+                        for (let dx = 0; dx < pixelSize && x + dx < width; dx++) {
+                            for (let dy = 0; dy < pixelSize && y + dy < height; dy++) {
+                                const idx = ((y + dy) * width + (x + dx)) * 4;
+                                data[idx] = 0;     // R
+                                data[idx + 1] = 0; // G
+                                data[idx + 2] = 30; // B
+                                data[idx + 3] = Math.floor(alpha * 255); // A
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Render the image data
+            ctx.putImageData(imageData, 0, 0);
+            
+            // Draw terminator line
+            const terminatorPoints = getTerminatorPoints(sunPos);
+            if (terminatorPoints.length > 1) {
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                terminatorPoints.forEach((point, i) => {
+                    if (i === 0) ctx.moveTo(point.x, point.y);
+                    else ctx.lineTo(point.x, point.y);
+                });
+                ctx.stroke();
+            }
+            
+            // Draw sun position
+            const sunPixel = latLngToPixel(sunPos.lat, sunPos.lng);
+            if (sunPixel.y >= 0 && sunPixel.y <= height) {
+                // Sun glow
+                const gradient = ctx.createRadialGradient(sunPixel.x, sunPixel.y, 0, sunPixel.x, sunPixel.y, 20);
+                gradient.addColorStop(0, 'rgba(255, 215, 0, 0.8)');
+                gradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(sunPixel.x, sunPixel.y, 20, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Sun core
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.arc(sunPixel.x, sunPixel.y, 6, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            
+            // Update info display
+            document.getElementById('currentTime').textContent = 
+                `Current UTC Time: ${now.toUTCString()}`;
+            document.getElementById('sunPosition').textContent = 
+                `Sun Position: ${sunPos.lat.toFixed(1)}°, ${sunPos.lng.toFixed(1)}°`;
+        }
+
+        // Initial draw and set up auto-refresh
+        drawMap();
+        setInterval(drawMap, 60000); // Update every minute
+    </script>
+</body>
+</html>
