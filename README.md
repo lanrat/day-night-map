@@ -14,7 +14,7 @@ A real-time visualization of day and night regions across the world using accura
 ## Usage
 
 - **Normal mode**: Open [lanrat.github.io/day-night-map/](https://lanrat.github.io/day-night-map/) in a web browser
-- **Minimal mode**: Open  [lanrat.github.io/day-night-map/?minimal](https://lanrat.github.io/day-night-map/?minimal) for a full-screen view without UI elements
+- **Minimal mode**: Open [lanrat.github.io/day-night-map/?minimal](https://lanrat.github.io/day-night-map/?minimal) for a full-screen view without UI elements
 
 ## Technical Details
 
