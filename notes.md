@@ -17,3 +17,9 @@ prompt
 ```
 can you write a simple webpage that displays a mercator projection map of the earth with an icon representing the sun overlayed on the map where the sun currently is based on the user's time, and show a day/night map showing the portions of the map which are currently have no sunlight, as well as shaded regions for dawn/dusk?
 ```
+
+# TODO
+
+* BW map
+* map-only mode
+* moon location

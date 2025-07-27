@@ -35,7 +35,7 @@
             display: block;
             width: 1000px;
             height: 500px;
-            filter: grayscale();
+            /*filter: grayscale();*/
         }
         
         #mapCanvas {
@@ -81,7 +81,7 @@
     <div class="container">
         <h1>Real-Time Day/Night World Map</h1>
         <div class="map-container">
-            <img id="worldMap" src="https://upload.wikimedia.org/wikipedia/commons/8/83/Equirectangular_projection_SW.jpg" alt="World Map" crossorigin="anonymous">
+            <img id="worldMap" src="BlankMap-Equirectangular.svg" alt="World Map">
             <canvas id="mapCanvas" width="1000" height="500"></canvas>
         </div>
         
@@ -144,6 +144,7 @@
                 lng: sunLongitude > 180 ? sunLongitude - 360 : sunLongitude < -180 ? sunLongitude + 360 : sunLongitude
             };
         }
+
 
         // Calculate solar elevation angle
         function getSolarElevation(lat, lng, sunLat, sunLng) {
@@ -274,6 +275,7 @@
                 ctx.arc(sunPixel.x, sunPixel.y, 6, 0, 2 * Math.PI);
                 ctx.fill();
             }
+            
             
             // Update info display
             document.getElementById('currentTime').textContent = 
