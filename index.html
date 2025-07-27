@@ -162,18 +162,18 @@
         // Calculate day/night terminator line points
         function getTerminatorPoints(sunPos) {
             const points = [];
-            for (let lng = -180; lng <= 180; lng += 1) {
-                // Calculate terminator latitude using spherical trigonometry
-                const lngDiff = (lng - sunPos.lng) * Math.PI / 180;
-                const sunLatRad = sunPos.lat * Math.PI / 180;
-                
-                // Terminator latitude where sun is on horizon (elevation = 0)
-                const lat = Math.atan(-Math.cos(lngDiff) / Math.tan(sunLatRad)) * 180 / Math.PI;
-                
-                if (lat >= -85 && lat <= 85 && !isNaN(lat)) {
-                    const pixel = latLngToPixel(lat, lng);
-                    if (pixel.y >= 0 && pixel.y <= height) {
-                        points.push(pixel);
+            for (let lng = -180; lng <= 180; lng += 2) {
+                // Find latitude where solar elevation equals 0
+                for (let lat = -90; lat <= 90; lat += 1) {
+                    const elevation = getSolarElevation(lat, lng, sunPos.lat, sunPos.lng);
+                    
+                    // Check if this point is close to the terminator (elevation ≈ 0)
+                    if (Math.abs(elevation) < 0.5) {
+                        const pixel = latLngToPixel(lat, lng);
+                        if (pixel.y >= 0 && pixel.y <= height) {
+                            points.push(pixel);
+                        }
+                        break; // Found terminator for this longitude
                     }
                 }
             }
@@ -207,26 +207,22 @@
                     
                     const elevation = getSolarElevation(lat, lng, sunPos.lat, sunPos.lng);
                     
-                    // Create smooth gradient with interpolated values
+                    // Create smooth gradient with tighter thresholds
                     let alpha = 0;
-                    if (elevation < -18) {
+                    if (elevation < -12) {
                         alpha = 0.8; // Deep night
-                    } else if (elevation < -12) {
-                        // Smooth transition from astronomical to deep night
-                        const factor = (elevation + 18) / 6;
-                        alpha = 0.8 - (0.1 * factor);
                     } else if (elevation < -6) {
-                        // Smooth transition from nautical to astronomical twilight
+                        // Astronomical twilight
                         const factor = (elevation + 12) / 6;
-                        alpha = 0.7 - (0.2 * factor);
+                        alpha = 0.8 - (0.2 * factor);
+                    } else if (elevation < -1) {
+                        // Nautical/civil twilight
+                        const factor = (elevation + 6) / 5;
+                        alpha = 0.6 - (0.4 * factor);
                     } else if (elevation < 0) {
-                        // Smooth transition from civil twilight to day
-                        const factor = (elevation + 6) / 6;
-                        alpha = 0.5 - (0.2 * factor);
-                    } else if (elevation < 3) {
-                        // Very light twilight near horizon
-                        const factor = elevation / 3;
-                        alpha = 0.3 - (0.3 * factor);
+                        // Very light twilight at horizon
+                        const factor = (elevation + 1) / 1;
+                        alpha = 0.2 - (0.2 * factor);
                     }
                     
                     // Apply to image data for smoother rendering
@@ -237,7 +233,7 @@
                                 data[idx] = 0;     // R
                                 data[idx + 1] = 0; // G
                                 data[idx + 2] = 30; // B
-                                data[idx + 3] = Math.floor(alpha * 255); // A
+                                data[idx + 3] = Math.floor(alpha * 255*0.75); // A
                             }
                         }
                     }
