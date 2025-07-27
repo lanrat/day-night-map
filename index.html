@@ -127,32 +127,17 @@
 
         // Calculate solar position based on date and time
         function getSolarPosition(date) {
-            // Get Julian day number
-            const a = Math.floor((14 - (date.getUTCMonth() + 1)) / 12);
-            const y = date.getUTCFullYear() - a;
-            const m = (date.getUTCMonth() + 1) + 12 * a - 3;
-            const jdn = date.getUTCDate() + Math.floor((153 * m + 2) / 5) + 365 * y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) - 32045;
+            // Simple, reliable approach
+            const dayOfYear = Math.floor((date - new Date(date.getFullYear(), 0, 0)) / 864e5);
+            const hours = date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
             
-            // Days since J2000.0
-            const n = jdn - 2451545.0 + (date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600) / 24;
+            // Solar declination (simple but accurate enough)
+            const declination = -23.45 * Math.cos(2 * Math.PI * (dayOfYear + 10) / 365.25);
             
-            // Mean longitude of the Sun
-            const L = (280.460 + 0.9856474 * n) % 360;
-            
-            // Mean anomaly
-            const g = ((357.528 + 0.9856003 * n) % 360) * Math.PI / 180;
-            
-            // Ecliptic longitude
-            const lambda = (L + 1.915 * Math.sin(g) + 0.020 * Math.sin(2 * g)) * Math.PI / 180;
-            
-            // Solar declination
-            const declination = Math.asin(Math.sin(23.439 * Math.PI / 180) * Math.sin(lambda)) * 180 / Math.PI;
-            
-            // Greenwich Hour Angle - where the sun is directly overhead
-            const gha = (280.46061837 + 360.98564736629 * n + 0.000387933 * n * n / 38710000) % 360;
-            
-            // Solar longitude (where sun is at zenith)
-            const sunLongitude = -gha; // Negative because we want where sun is overhead
+            // Solar longitude: where sun is directly overhead
+            // At UTC noon (12:00), sun is at longitude 0°
+            // Sun moves 15° west per hour (360° / 24 hours)
+            const sunLongitude = -(hours - 12) * 15;
             
             return {
                 lat: declination,
