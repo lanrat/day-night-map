@@ -82,7 +82,6 @@
         
         /* Minimal mode styles */
         .minimal-mode h1,
-        .minimal-mode .info,
         .minimal-mode .legend {
             display: none;
         }
@@ -96,22 +95,53 @@
             margin: 0;
             max-width: none;
             text-align: left;
+            height: calc(100vh - 60px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         
         .minimal-mode .map-container {
             border-radius: 0;
             border: none;
             box-shadow: none;
-            width: 100vw;
-            height: 50vw; /* Maintain 2:1 aspect ratio */
-            max-height: 100vh;
-            max-width: 200vh; /* If height is constrained, maintain ratio */
+            width: 100%;
+            height: 100%;
+            max-width: calc((100vh - 60px) * 2); /* Maintain 2:1 aspect ratio */
+            max-height: 50vw; /* If width is constrained, maintain ratio */
+            overflow: hidden; /* Hide content beyond edges */
+            aspect-ratio: 2 / 1;
         }
         
         .minimal-mode #worldMap,
         .minimal-mode #mapCanvas {
             width: 100%;
             height: 100%;
+            object-fit: cover; /* Ensure image fills container properly */
+        }
+        
+        /* Info box in minimal mode */
+        .minimal-mode .info {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            margin: 0;
+            padding: 10px 20px;
+            background-color: rgba(248, 249, 250, 0.95);
+            border: none;
+            border-top: 1px solid #e0e0e0;
+            border-radius: 0;
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            height: 40px;
+        }
+        
+        .minimal-mode .info > div {
+            margin: 0;
         }
     </style>
 </head>
