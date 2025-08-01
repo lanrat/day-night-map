@@ -175,6 +175,10 @@
                 <div class="legend-color" style="background-color: #FFD700;"></div>
                 <span>☀ Sun Position</span>
             </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #E0E0E0;"></div>
+                <span>🌙 Moon Position</span>
+            </div>
         </div>
     </div>
 
@@ -249,6 +253,105 @@
             };
         }
 
+        // Calculate lunar position based on date and time
+        function getLunarPosition(date) {
+            // Calculate Julian Date
+            const year = date.getUTCFullYear();
+            const month = date.getUTCMonth() + 1;
+            const day = date.getUTCDate();
+            const hour = date.getUTCHours();
+            const minute = date.getUTCMinutes();
+            const second = date.getUTCSeconds();
+            
+            // Calculate Julian Date
+            let a = Math.floor((14 - month) / 12);
+            let y = year + 4800 - a;
+            let m = month + 12 * a - 3;
+            
+            let JD = day + Math.floor((153 * m + 2) / 5) + 365 * y + 
+                     Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) - 32045;
+            JD += (hour - 12) / 24 + minute / 1440 + second / 86400;
+            
+            // Days since J2000.0
+            const d = JD - 2451545.0;
+            
+            // Moon's mean longitude
+            const Lm = (218.316 + 13.176396 * d) % 360;
+            
+            // Moon's mean anomaly
+            const Mm = (134.963 + 13.064993 * d) % 360;
+            
+            // Sun's mean anomaly
+            const Ms = (357.529 + 0.98560028 * d) % 360;
+            
+            // Moon's argument of latitude
+            const F = (93.272 + 13.229350 * d) % 360;
+            
+            // Longitude of ascending node
+            const omega = (125.04 - 0.052954 * d) % 360;
+            
+            // Convert to radians
+            const toRad = Math.PI / 180;
+            const MmRad = Mm * toRad;
+            const MsRad = Ms * toRad;
+            const FRad = F * toRad;
+            
+            // Calculate ecliptic longitude (simplified but accurate to ~1 degree)
+            let lambda = Lm;
+            lambda += 6.289 * Math.sin(MmRad);
+            lambda += 1.274 * Math.sin(2 * FRad - MmRad);
+            lambda += 0.658 * Math.sin(2 * FRad);
+            lambda += 0.214 * Math.sin(2 * MmRad);
+            lambda -= 0.186 * Math.sin(MsRad);
+            lambda -= 0.114 * Math.sin(2 * FRad);
+            
+            // Calculate ecliptic latitude
+            let beta = 5.128 * Math.sin(FRad);
+            beta += 0.280 * Math.sin(MmRad + FRad);
+            beta += 0.277 * Math.sin(MmRad - FRad);
+            
+            // Convert to radians
+            const lambdaRad = lambda * toRad;
+            const betaRad = beta * toRad;
+            
+            // Obliquity of ecliptic
+            const epsilon = 23.439 * toRad;
+            
+            // Convert to equatorial coordinates
+            const alpha = Math.atan2(
+                Math.sin(lambdaRad) * Math.cos(epsilon) - Math.tan(betaRad) * Math.sin(epsilon),
+                Math.cos(lambdaRad)
+            );
+            
+            const delta = Math.asin(
+                Math.sin(betaRad) * Math.cos(epsilon) + 
+                Math.cos(betaRad) * Math.sin(epsilon) * Math.sin(lambdaRad)
+            );
+            
+            // Convert to degrees
+            const declination = delta / toRad;
+            let rightAscension = alpha / toRad;
+            if (rightAscension < 0) rightAscension += 360;
+            
+            // Calculate Greenwich Sidereal Time
+            const T = d / 36525.0;
+            let GST = 280.46061837 + 360.98564736629 * d + 0.000387933 * T * T;
+            GST = GST % 360;
+            if (GST < 0) GST += 360;
+            
+            // Geographic longitude where moon is overhead
+            let moonLongitude = rightAscension - GST;
+            
+            // Normalize to -180 to 180
+            while (moonLongitude > 180) moonLongitude -= 360;
+            while (moonLongitude < -180) moonLongitude += 360;
+            
+            return {
+                lat: declination,
+                lng: moonLongitude
+            };
+        }
+
 
         // Calculate solar elevation angle
         function getSolarElevation(lat, lng, sunLat, sunLng) {
@@ -289,6 +392,7 @@
         function drawMap() {
             const now = new Date();
             const sunPos = getSolarPosition(now);
+            const moonPos = getLunarPosition(now);
             
             // Clear canvas (make transparent for overlay)
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -380,12 +484,37 @@
                 ctx.fill();
             }
             
+            // Draw moon position
+            const moonPixel = latLngToPixel(moonPos.lat, moonPos.lng);
+            if (moonPixel.y >= 0 && moonPixel.y <= canvas.height) {
+                // Moon glow
+                const moonGradient = ctx.createRadialGradient(moonPixel.x, moonPixel.y, 0, moonPixel.x, moonPixel.y, 15);
+                moonGradient.addColorStop(0, 'rgba(220, 220, 220, 0.8)');
+                moonGradient.addColorStop(1, 'rgba(220, 220, 220, 0)');
+                ctx.fillStyle = moonGradient;
+                ctx.beginPath();
+                ctx.arc(moonPixel.x, moonPixel.y, 15, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Moon core
+                ctx.fillStyle = '#E0E0E0';
+                ctx.beginPath();
+                ctx.arc(moonPixel.x, moonPixel.y, 5, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Moon crescent effect (simple)
+                ctx.fillStyle = '#C0C0C0';
+                ctx.beginPath();
+                ctx.arc(moonPixel.x - 1, moonPixel.y, 4, -Math.PI/2, Math.PI/2);
+                ctx.fill();
+            }
+            
             
             // Update info display
             document.getElementById('currentTime').textContent = 
                 `Current UTC Time: ${now.toUTCString()}`;
             document.getElementById('sunPosition').textContent = 
-                `Sun Position: ${sunPos.lat.toFixed(1)}°, ${sunPos.lng.toFixed(1)}°`;
+                `Sun: ${sunPos.lat.toFixed(1)}°, ${sunPos.lng.toFixed(1)}° | Moon: ${moonPos.lat.toFixed(1)}°, ${moonPos.lng.toFixed(1)}°`;
         }
 
         // Initial draw and set up auto-refresh
