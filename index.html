@@ -36,8 +36,8 @@
             display: block;
             width: 1000px;
             height: 500px;
-            filter: brightness(1.5);
-            /*filter: grayscale();*/
+/*            filter: brightness(1.3);*/
+            filter: brightness(1.7);
         }
         
         #mapCanvas {
@@ -132,7 +132,7 @@
             border: none;
             border-top: 1px solid #e0e0e0;
             border-radius: 0;
-            box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+            box-shadow: none;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -500,9 +500,9 @@
                         // Simplified 3-shade approach for 3-bit grayscale
                         color = [0, 0, 0]; // Pure black overlay
                         if (elevation < -6) {
-                            alpha = 0.7; // Dark night
+                            alpha = 0.5; // Dark night (lighter to show map underneath)
                         } else if (elevation < 0) {
-                            alpha = 0.4; // Twilight
+                            alpha = 0.25; // Twilight (lighter)
                         }
                     } else {
                         // Original smooth gradient for color displays
