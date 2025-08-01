@@ -143,6 +143,23 @@
         .minimal-mode .info > div {
             margin: 0;
         }
+        
+        /* Grayscale mode styles for 3-bit displays */
+        .grayscale-mode {
+            filter: grayscale(100%);
+        }
+        
+        .grayscale-mode .info {
+            background-color: white;
+            color: black;
+            border-color: black;
+        }
+        
+        .grayscale-mode .minimal-mode .info {
+            background-color: white;
+            color: black;
+            border-top-color: black;
+        }
     </style>
 </head>
 <body>
@@ -183,16 +200,22 @@
     </div>
 
     <script>
-        // Check for minimal mode URL parameter
+        // Check for minimal and grayscale mode URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         const isMinimal = urlParams.has('minimal') || hashParams.has('minimal') || 
                          window.location.search.includes('minimal') || 
                          window.location.hash.includes('minimal');
+        const isGrayscale = urlParams.has('grayscale') || hashParams.has('grayscale') || 
+                           window.location.search.includes('grayscale') || 
+                           window.location.hash.includes('grayscale');
         
-        // Apply minimal mode if requested
+        // Apply modes if requested
         if (isMinimal) {
             document.documentElement.classList.add('minimal-mode');
+        }
+        if (isGrayscale) {
+            document.documentElement.classList.add('grayscale-mode');
         }
         
         const canvas = document.getElementById('mapCanvas');
@@ -450,7 +473,7 @@
             // Clear canvas (make transparent for overlay)
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // Draw night overlay with smooth gradient using optimized approach
+            // Draw night overlay with optimized approach for grayscale
             const pixelSize = 2; // Balanced performance and quality
             
             // Use image data for smooth pixel manipulation
@@ -469,22 +492,35 @@
                     
                     const elevation = getSolarElevation(lat, lng, sunPos.lat, sunPos.lng);
                     
-                    // Create smooth gradient with tighter thresholds
+                    // Create overlay with different approach for grayscale
                     let alpha = 0;
-                    if (elevation < -12) {
-                        alpha = 0.8; // Deep night
-                    } else if (elevation < -6) {
-                        // Astronomical twilight
-                        const factor = (elevation + 12) / 6;
-                        alpha = 0.8 - (0.2 * factor);
-                    } else if (elevation < -1) {
-                        // Nautical/civil twilight
-                        const factor = (elevation + 6) / 5;
-                        alpha = 0.6 - (0.4 * factor);
-                    } else if (elevation < 0) {
-                        // Very light twilight at horizon
-                        const factor = (elevation + 1) / 1;
-                        alpha = 0.2 - (0.2 * factor);
+                    let color = [0, 0, 30]; // Default blue for color mode
+                    
+                    if (isGrayscale) {
+                        // Simplified 3-shade approach for 3-bit grayscale
+                        color = [0, 0, 0]; // Pure black overlay
+                        if (elevation < -6) {
+                            alpha = 0.7; // Dark night
+                        } else if (elevation < 0) {
+                            alpha = 0.4; // Twilight
+                        }
+                    } else {
+                        // Original smooth gradient for color displays
+                        if (elevation < -12) {
+                            alpha = 0.8; // Deep night
+                        } else if (elevation < -6) {
+                            // Astronomical twilight
+                            const factor = (elevation + 12) / 6;
+                            alpha = 0.8 - (0.2 * factor);
+                        } else if (elevation < -1) {
+                            // Nautical/civil twilight
+                            const factor = (elevation + 6) / 5;
+                            alpha = 0.6 - (0.4 * factor);
+                        } else if (elevation < 0) {
+                            // Very light twilight at horizon
+                            const factor = (elevation + 1) / 1;
+                            alpha = 0.2 - (0.2 * factor);
+                        }
                     }
                     
                     // Apply to image data for smoother rendering
@@ -492,10 +528,10 @@
                         for (let dx = 0; dx < pixelSize && x + dx < canvas.width; dx++) {
                             for (let dy = 0; dy < pixelSize && y + dy < canvas.height; dy++) {
                                 const idx = ((y + dy) * canvas.width + (x + dx)) * 4;
-                                data[idx] = 0;     // R
-                                data[idx + 1] = 0; // G
-                                data[idx + 2] = 30; // B
-                                data[idx + 3] = Math.floor(alpha * 255*0.75); // A
+                                data[idx] = color[0];     // R
+                                data[idx + 1] = color[1]; // G
+                                data[idx + 2] = color[2]; // B
+                                data[idx + 3] = Math.floor(alpha * 255 * (isGrayscale ? 1 : 0.75)); // A
                             }
                         }
                     }
@@ -521,20 +557,50 @@
             // Draw sun position
             const sunPixel = latLngToPixel(sunPos.lat, sunPos.lng);
             if (sunPixel.y >= 0 && sunPixel.y <= canvas.height) {
-                // Sun glow
-                const gradient = ctx.createRadialGradient(sunPixel.x, sunPixel.y, 0, sunPixel.x, sunPixel.y, 30);
-                gradient.addColorStop(0, 'rgba(255, 215, 0, 0.8)');
-                gradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
-                ctx.fillStyle = gradient;
-                ctx.beginPath();
-                ctx.arc(sunPixel.x, sunPixel.y, 30, 0, 2 * Math.PI);
-                ctx.fill();
-                
-                // Sun core
-                ctx.fillStyle = '#FFD700';
-                ctx.beginPath();
-                ctx.arc(sunPixel.x, sunPixel.y, 10, 0, 2 * Math.PI);
-                ctx.fill();
+                if (isGrayscale) {
+                    // High contrast sun for grayscale
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    ctx.arc(sunPixel.x, sunPixel.y, 12, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    // Black border for contrast
+                    ctx.strokeStyle = 'black';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(sunPixel.x, sunPixel.y, 12, 0, 2 * Math.PI);
+                    ctx.stroke();
+                    
+                    // Add sun rays pattern
+                    ctx.strokeStyle = 'black';
+                    ctx.lineWidth = 1;
+                    for (let i = 0; i < 8; i++) {
+                        const angle = (i * Math.PI) / 4;
+                        const x1 = sunPixel.x + Math.cos(angle) * 15;
+                        const y1 = sunPixel.y + Math.sin(angle) * 15;
+                        const x2 = sunPixel.x + Math.cos(angle) * 20;
+                        const y2 = sunPixel.y + Math.sin(angle) * 20;
+                        ctx.beginPath();
+                        ctx.moveTo(x1, y1);
+                        ctx.lineTo(x2, y2);
+                        ctx.stroke();
+                    }
+                } else {
+                    // Original color sun
+                    const gradient = ctx.createRadialGradient(sunPixel.x, sunPixel.y, 0, sunPixel.x, sunPixel.y, 30);
+                    gradient.addColorStop(0, 'rgba(255, 215, 0, 0.8)');
+                    gradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(sunPixel.x, sunPixel.y, 30, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    // Sun core
+                    ctx.fillStyle = '#FFD700';
+                    ctx.beginPath();
+                    ctx.arc(sunPixel.x, sunPixel.y, 10, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
             }
             
             // Draw moon position
@@ -560,11 +626,11 @@
                 ctx.clip();
                 
                 // Fill with dark color (shadow)
-                ctx.fillStyle = '#606060';
+                ctx.fillStyle = isGrayscale ? 'black' : '#606060';
                 ctx.fillRect(-moonRadius, -moonRadius, moonRadius * 2, moonRadius * 2);
                 
                 // Draw the illuminated part based on actual illuminated fraction
-                ctx.fillStyle = '#F0F0F0';
+                ctx.fillStyle = isGrayscale ? 'white' : '#F0F0F0';
                 const illuminatedFraction = moonPos.illuminatedFraction;
                 const phase = moonPos.phase;
                 
@@ -638,8 +704,9 @@
             
             
             // Update info display
+            const timeString = now.toUTCString().replace(/:\d{2} GMT$/, ' GMT');
             document.getElementById('currentTime').textContent = 
-                `Current UTC Time: ${now.toUTCString()}`;
+                `Current UTC Time: ${timeString}`;
             const moonPhaseName = getMoonPhaseName(moonPos.phase);
             const illumination = Math.round(moonPos.illuminatedFraction * 100);
             document.getElementById('sunPosition').textContent = 

@@ -12,18 +12,22 @@ A real-time visualization of day and night regions across the world using accura
 - Accurate moon phase visualization showing current illumination
 - Moon phase name and illumination percentage display
 - Responsive design with normal and minimal viewing modes
+- Grayscale mode optimized for 3-bit displays and e-ink screens
 - Accurate Mercator projection using SVG world map
 
 ## Usage
 
 - **Normal mode**: Open [lanrat.github.io/day-night-map/](https://lanrat.github.io/day-night-map/) in a web browser
 - **Minimal mode**: Open [lanrat.github.io/day-night-map/?minimal](https://lanrat.github.io/day-night-map/?minimal) for a full-screen view with info bar at bottom
+- **Grayscale mode**: Add `&grayscale` to any URL for optimized display on grayscale/e-ink displays (e.g., `?minimal&grayscale`)
 
 ## Technical Details
 
-The application calculates solar and lunar positions using simplified astronomical formulas and renders day/night regions using HTML5 Canvas with smooth alpha blending for twilight zones. Both the sun and moon positions show where each celestial body is directly overhead on Earth's surface. 
+The application calculates solar and lunar positions using simplified astronomical formulas and renders day/night regions using HTML5 Canvas with smooth alpha blending for twilight zones. Both the sun and moon positions show where each celestial body is directly overhead on Earth's surface.
 
 The moon display includes accurate phase visualization based on its elongation from the sun, showing the correct illuminated fraction with proper waxing/waning orientation. The phase name (New Moon, First Quarter, Full Moon, etc.) and illumination percentage are displayed in the info panel.
+
+Grayscale mode provides optimized rendering for limited-color displays by using high contrast black and white elements, simplified twilight zones, and distinctive sun/moon icons with clear visual patterns.
 
 The map updates every minute to reflect current conditions.
 
