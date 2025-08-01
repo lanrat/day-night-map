@@ -522,18 +522,18 @@
             const sunPixel = latLngToPixel(sunPos.lat, sunPos.lng);
             if (sunPixel.y >= 0 && sunPixel.y <= canvas.height) {
                 // Sun glow
-                const gradient = ctx.createRadialGradient(sunPixel.x, sunPixel.y, 0, sunPixel.x, sunPixel.y, 20);
+                const gradient = ctx.createRadialGradient(sunPixel.x, sunPixel.y, 0, sunPixel.x, sunPixel.y, 30);
                 gradient.addColorStop(0, 'rgba(255, 215, 0, 0.8)');
                 gradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
                 ctx.fillStyle = gradient;
                 ctx.beginPath();
-                ctx.arc(sunPixel.x, sunPixel.y, 20, 0, 2 * Math.PI);
+                ctx.arc(sunPixel.x, sunPixel.y, 30, 0, 2 * Math.PI);
                 ctx.fill();
                 
                 // Sun core
                 ctx.fillStyle = '#FFD700';
                 ctx.beginPath();
-                ctx.arc(sunPixel.x, sunPixel.y, 6, 0, 2 * Math.PI);
+                ctx.arc(sunPixel.x, sunPixel.y, 10, 0, 2 * Math.PI);
                 ctx.fill();
             }
             
@@ -541,16 +541,16 @@
             const moonPixel = latLngToPixel(moonPos.lat, moonPos.lng);
             if (moonPixel.y >= 0 && moonPixel.y <= canvas.height) {
                 // Moon glow
-                const moonGradient = ctx.createRadialGradient(moonPixel.x, moonPixel.y, 0, moonPixel.x, moonPixel.y, 15);
+                const moonGradient = ctx.createRadialGradient(moonPixel.x, moonPixel.y, 0, moonPixel.x, moonPixel.y, 25);
                 moonGradient.addColorStop(0, 'rgba(220, 220, 220, 0.8)');
                 moonGradient.addColorStop(1, 'rgba(220, 220, 220, 0)');
                 ctx.fillStyle = moonGradient;
                 ctx.beginPath();
-                ctx.arc(moonPixel.x, moonPixel.y, 15, 0, 2 * Math.PI);
+                ctx.arc(moonPixel.x, moonPixel.y, 25, 0, 2 * Math.PI);
                 ctx.fill();
                 
                 // Draw moon with phase
-                const moonRadius = 6;
+                const moonRadius = 10;
                 ctx.save();
                 ctx.translate(moonPixel.x, moonPixel.y);
                 
