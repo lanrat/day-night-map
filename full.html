@@ -1,0 +1,21 @@
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden; /* Prevents scrollbars on the main page if iframe content is larger */
+  }
+
+  iframe {
+    position: fixed; /* Positions the iframe relative to the viewport */
+    top: 0;
+    left: 0;
+    width: 100vw; /* 100% of viewport width */
+    height: 100vh; /* 100% of viewport height */
+    border: none;
+    overflow: auto; /* Allows scrolling within the iframe if its content overflows */
+  }
+</style>
+<div class="layout layout--col gap--space-between image-dither">
+  <iframe src="index.html?minimal&grayscale"></iframe>
+</div>

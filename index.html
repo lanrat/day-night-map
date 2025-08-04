@@ -36,8 +36,6 @@
             display: block;
             width: 1000px;
             height: 500px;
-/*            filter: brightness(1.3);*/
-            filter: brightness(1.7);
         }
         
         #mapCanvas {
@@ -128,7 +126,6 @@
             right: 0;
             margin: 0;
             padding: 10px 20px;
-            background-color: rgba(248, 249, 250, 0.95);
             border: none;
             border-top: 1px solid #e0e0e0;
             border-radius: 0;
@@ -184,10 +181,10 @@
                 <div class="legend-color" style="background-color: rgba(0,0,50,0.4);"></div>
                 <span>Twilight</span>
             </div>
-            <div class="legend-item">
+            <!--<div class="legend-item">
                 <div class="legend-color" style="background-color: rgba(255,255,255,0.3);"></div>
                 <span>Terminator Line</span>
-            </div>
+            </div>-->
             <div class="legend-item">
                 <div class="legend-color" style="background-color: #FFD700;"></div>
                 <span>☀ Sun Position</span>
@@ -500,9 +497,9 @@
                         // Simplified 3-shade approach for 3-bit grayscale
                         color = [0, 0, 0]; // Pure black overlay
                         if (elevation < -6) {
-                            alpha = 0.5; // Dark night (lighter to show map underneath)
+                            alpha = 0.45; // Dark night (lighter to show map underneath)
                         } else if (elevation < 0) {
-                            alpha = 0.25; // Twilight (lighter)
+                            alpha = 0.15; // Twilight (lighter)
                         }
                     } else {
                         // Original smooth gradient for color displays
@@ -542,7 +539,7 @@
             ctx.putImageData(imageData, 0, 0);
             
             // Draw terminator line
-            const terminatorPoints = getTerminatorPoints(sunPos);
+            /*const terminatorPoints = getTerminatorPoints(sunPos);
             if (terminatorPoints.length > 1) {
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
                 ctx.lineWidth = 2;
@@ -552,7 +549,7 @@
                     else ctx.lineTo(point.x, point.y);
                 });
                 ctx.stroke();
-            }
+            }*/
             
             // Draw sun position
             const sunPixel = latLngToPixel(sunPos.lat, sunPos.lng);

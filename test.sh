@@ -6,13 +6,12 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 RESOLUTION="800,480"
 
-google-chrome --headless --window-size=$RESOLUTION --screenshot="screenshot.png" "file://$SCRIPT_DIR/index.html"
+google-chrome --headless --window-size=$RESOLUTION --screenshot="screenshot.png" "file://$SCRIPT_DIR/full.html"
 
 
 # magick screenshot.png -dither FloydSteinberg -remap pattern:gray50 -depth 1 -strip png:output.png
-#convert screenshot.png -monochrome -depth 3 -strip png:output.png
 
-docker run --rm -v "$SCRIPT_DIR:/app" -w /app --entrypoint magick minidocks/imagemagick \
+docker run --rm --user="$UID" -v "$SCRIPT_DIR:/app" -w /app --entrypoint magick minidocks/imagemagick \
     screenshot.png -dither FloydSteinberg -remap pattern:gray50 -depth 1 -strip png:output.png
 
 # docker run --rm -v "$SCRIPT_DIR:/app" -w /app --entrypoint magick minidocks/imagemagick \
