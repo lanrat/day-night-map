@@ -55,6 +55,7 @@
             border-radius: 8px;
             display: inline-block;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            white-space: pre-line;
         }
         
         .legend {
@@ -170,6 +171,7 @@
         <div class="info">
             <div id="currentTime"></div>
             <div id="sunPosition"></div>
+            <div id="moonPosition"></div>
         </div>
         
         <div class="legend">
@@ -703,11 +705,13 @@
             // Update info display
             const timeString = now.toUTCString().replace(/:\d{2} GMT$/, ' GMT');
             document.getElementById('currentTime').textContent = 
-                `Current UTC Time: ${timeString}`;
+                `Current UTC Time:\n${timeString}`;
             const moonPhaseName = getMoonPhaseName(moonPos.phase);
             const illumination = Math.round(moonPos.illuminatedFraction * 100);
             document.getElementById('sunPosition').textContent = 
-                `Sun: ${sunPos.lat.toFixed(1)}°, ${sunPos.lng.toFixed(1)}° | Moon: ${moonPos.lat.toFixed(1)}°, ${moonPos.lng.toFixed(1)}° (${moonPhaseName}, ${illumination}% illuminated)`;
+                `Sun: ${sunPos.lat.toFixed(1)}°, ${sunPos.lng.toFixed(1)}°`;
+            document.getElementById('moonPosition').textContent = 
+                `Moon: ${moonPos.lat.toFixed(1)}°,${moonPos.lng.toFixed(1)}°\n(${moonPhaseName}, ${illumination}% illuminated)`;
         }
 
         // Initial draw and set up auto-refresh
