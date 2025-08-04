@@ -6,7 +6,11 @@
     "words": [
         "Equirectangular",
         "Grayscale",
-        "rgba"
+        "magick",
+        "minidocks",
+        "rgba",
+        "scrollbars",
+        "Steinberg"
     ],
     "ignoreWords": [],
     "import": []
