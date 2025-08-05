@@ -558,8 +558,7 @@ function drawMap() {
                 minute: '2-digit',
                 timeZoneName: 'short'
             });
-            const tzName = displayTimezone === Intl.DateTimeFormat().resolvedOptions().timeZone ? 'Local Time' : displayTimezone;
-            timeDisplay = `${tzName}:\n${timeString}`;
+            timeDisplay = `Current Time:\n${timeString}`;
         }
     } catch (error) {
         // Fallback to UTC if timezone is invalid
