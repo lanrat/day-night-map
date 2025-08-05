@@ -526,7 +526,7 @@ function drawMap() {
     if (isMinimal) {
         // In minimal mode, show only the date
         const dateString = now.toUTCString().split(' ').slice(0, 4).join(' ');
-        timeDisplay = `Date: ${dateString}`;
+        timeDisplay = `${dateString}`;
     } else {
         // In normal mode, show full time
         const timeString = now.toUTCString().replace(/:\d{2} GMT$/, ' GMT');
@@ -539,7 +539,7 @@ function drawMap() {
     document.getElementById('sunPosition').textContent = 
         `Sun: ${sunPos.lat.toFixed(1)}°, ${sunPos.lng.toFixed(1)}°`;
     document.getElementById('moonPosition').textContent = 
-        `Moon: ${moonPos.lat.toFixed(1)}°,${moonPos.lng.toFixed(1)}°\n(${moonPhaseName}, ${illumination}% illuminated)`;
+        `Moon: ${moonPos.lat.toFixed(1)}°,${moonPos.lng.toFixed(1)}° (${moonPhaseName}, ${illumination}% illuminated)`;
 }
 
 // Initial draw and set up auto-refresh (only if no custom timestamp)
