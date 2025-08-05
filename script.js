@@ -522,9 +522,18 @@ function drawMap() {
     
     
     // Update info display
-    const timeString = now.toUTCString().replace(/:\d{2} GMT$/, ' GMT');
-    document.getElementById('currentTime').textContent = 
-        `Current UTC Time:\n${timeString}`;
+    let timeDisplay;
+    if (isMinimal) {
+        // In minimal mode, show only the date
+        const dateString = now.toUTCString().split(' ').slice(0, 4).join(' ');
+        timeDisplay = `Date: ${dateString}`;
+    } else {
+        // In normal mode, show full time
+        const timeString = now.toUTCString().replace(/:\d{2} GMT$/, ' GMT');
+        timeDisplay = `Current UTC Time:\n${timeString}`;
+    }
+    
+    document.getElementById('currentTime').textContent = timeDisplay;
     const moonPhaseName = getMoonPhaseName(moonPos.phase);
     const illumination = Math.round(moonPos.illuminatedFraction * 100);
     document.getElementById('sunPosition').textContent = 
