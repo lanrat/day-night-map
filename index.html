@@ -6,7 +6,7 @@
     <title>Day/Night World Map</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -17,7 +17,7 @@
             <canvas id="mapCanvas" width="1000" height="500"></canvas>
         </div>
         
-        <div class="info">
+        <div class="info" data-pixel-perfect="true">
             <div id="currentTime"></div>
             <div id="sunPosition"></div>
             <div id="moonPosition"></div>
@@ -32,10 +32,6 @@
                 <div class="legend-color" style="background-color: rgba(0,0,50,0.4);"></div>
                 <span>Twilight</span>
             </div>
-            <!--<div class="legend-item">
-                <div class="legend-color" style="background-color: rgba(255,255,255,0.3);"></div>
-                <span>Terminator Line</span>
-            </div>-->
             <div class="legend-item">
                 <div class="legend-color" style="background-color: #FFD700;"></div>
                 <span>☀ Sun Position</span>
