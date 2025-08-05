@@ -29,12 +29,15 @@ All parameters can be combined and used with either query string (`?`) or hash (
 - `minimal` - Full-screen minimal view
 - `grayscale` - Optimized for grayscale/e-ink displays  
 - `timestamp=<value>` - Display map at specific time (Unix timestamp in seconds or milliseconds)
+- `timezone=<value>` - Display date/time in specified timezone (IANA timezone name, defaults to user's local timezone)
 
 **Examples:**
 - `?minimal&grayscale` - Minimal grayscale mode
 - `?timestamp=1672531200` - New Year 2023 at midnight UTC
+- `?timezone=America/New_York` - Display time in Eastern timezone
+- `?timezone=Asia/Tokyo&minimal` - Tokyo time in minimal mode
 - `#minimal&timestamp=1672531200000` - Minimal mode at specific time (milliseconds)
-- `?minimal&grayscale&timestamp=1640995200` - All parameters combined
+- `?minimal&grayscale&timestamp=1640995200&timezone=Europe/London` - All parameters combined
 
 ## Technical Details
 

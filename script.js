@@ -26,6 +26,18 @@ if (urlParams.has('timestamp')) {
     }
 }
 
+// Check for timezone parameter (accepts IANA timezone names)
+let displayTimezone = null;
+if (urlParams.has('timezone')) {
+    displayTimezone = urlParams.get('timezone');
+} else if (hashParams.has('timezone')) {
+    displayTimezone = hashParams.get('timezone');
+}
+// If no timezone specified, use user's local timezone
+if (!displayTimezone) {
+    displayTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+}
+
 // Apply modes if requested
 if (isMinimal) {
     document.documentElement.classList.add('minimal-mode');
@@ -523,14 +535,42 @@ function drawMap() {
     
     // Update info display
     let timeDisplay;
-    if (isMinimal) {
-        // In minimal mode, show only the date
-        const dateString = now.toUTCString().split(' ').slice(0, 4).join(' ');
-        timeDisplay = `${dateString}`;
-    } else {
-        // In normal mode, show full time
-        const timeString = now.toUTCString().replace(/:\d{2} GMT$/, ' GMT');
-        timeDisplay = `Current UTC Time:\n${timeString}`;
+    try {
+        if (isMinimal) {
+            // In minimal mode, show only the date in specified timezone
+            const dateString = now.toLocaleDateString('en-US', {
+                timeZone: displayTimezone,
+                weekday: 'short',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+            timeDisplay = `${dateString}`;
+        } else {
+            // In normal mode, show full time in specified timezone
+            const timeString = now.toLocaleString('en-US', {
+                timeZone: displayTimezone,
+                weekday: 'short',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                timeZoneName: 'short'
+            });
+            const tzName = displayTimezone === Intl.DateTimeFormat().resolvedOptions().timeZone ? 'Local Time' : displayTimezone;
+            timeDisplay = `${tzName}:\n${timeString}`;
+        }
+    } catch (error) {
+        // Fallback to UTC if timezone is invalid
+        console.warn('Invalid timezone:', displayTimezone, 'Falling back to UTC');
+        if (isMinimal) {
+            const dateString = now.toUTCString().split(' ').slice(0, 4).join(' ');
+            timeDisplay = `${dateString}`;
+        } else {
+            const timeString = now.toUTCString().replace(/:\d{2} GMT$/, ' GMT');
+            timeDisplay = `UTC Time:\n${timeString}`;
+        }
     }
     
     document.getElementById('currentTime').textContent = timeDisplay;
