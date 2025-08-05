@@ -1,0 +1,153 @@
+body {
+    margin: 0;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+    background-color: #ffffff;
+    color: #333333;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+h1 {
+    margin-bottom: 20px;
+}
+
+.map-container {
+    position: relative;
+    display: inline-block;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    border: 1px solid #e0e0e0;
+}
+
+#worldMap {
+    display: block;
+    width: 1000px;
+    height: 500px;
+}
+
+#mapCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1000px;
+    height: 500px;
+    pointer-events: none;
+}
+
+.info {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    display: inline-block;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    white-space: pre-line;
+}
+
+.legend {
+    margin-top: 15px;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 3px;
+    border: 1px solid #ccc;
+}
+
+/* Minimal mode styles */
+.minimal-mode h1,
+.minimal-mode .legend {
+    display: none;
+}
+
+.minimal-mode body {
+    padding: 0;
+    margin: 0;
+}
+
+.minimal-mode .container {
+    margin: 0;
+    max-width: none;
+    text-align: left;
+    height: calc(100vh - 60px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.minimal-mode .map-container {
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    width: 100%;
+    height: 100%;
+    max-width: calc((100vh - 60px) * 2); /* Maintain 2:1 aspect ratio */
+    max-height: 50vw; /* If width is constrained, maintain ratio */
+    overflow: hidden; /* Hide content beyond edges */
+    aspect-ratio: 2 / 1;
+}
+
+.minimal-mode #worldMap,
+.minimal-mode #mapCanvas {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Ensure image fills container properly */
+}
+
+/* Info box in minimal mode */
+.minimal-mode .info {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: 0;
+    padding: 10px 20px;
+    border: none;
+    border-top: 1px solid #e0e0e0;
+    border-radius: 0;
+    box-shadow: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    height: 40px;
+}
+
+.minimal-mode .info > div {
+    margin: 0;
+}
+
+/* Grayscale mode styles for 3-bit displays */
+.grayscale-mode {
+    filter: grayscale(100%);
+}
+
+.grayscale-mode .info {
+    background-color: white;
+    color: black;
+    border-color: black;
+}
+
+.grayscale-mode .minimal-mode .info {
+    background-color: white;
+    color: black;
+    border-top-color: black;
+}
