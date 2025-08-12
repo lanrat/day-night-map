@@ -1,9 +1,16 @@
 body {
     margin: 0;
     padding: 20px;
-    font-family: NicoClean, 'Inter', Arial, sans-serif;
+    font-family: 'Inter', Arial, sans-serif;
     background-color: #ffffff;
     color: #000000;
+}
+
+@font-face {
+	font-family: "NicoClean";
+	font-style: normal;
+	font-weight: normal;
+	src: url(https://usetrmnl.com/fonts/NicoClean-Regular.ttf) format("truetype")
 }
 
 .container {
@@ -82,6 +89,7 @@ h1 {
 .minimal-mode body {
     padding: 0;
     margin: 0;
+    font-family: NicoClean, 'Inter', Arial, sans-serif;
 }
 
 .minimal-mode .container {
