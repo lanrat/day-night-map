@@ -294,6 +294,22 @@ function getTerminatorPoints(sunPos) {
     return points;
 }
 
+// Helper function to draw celestial body with edge wrapping
+function drawCelestialBodyWithWrapping(pixel, drawFunction, wrapThreshold = 50) {
+    // Always draw the primary icon
+    drawFunction(pixel.x, pixel.y);
+    
+    // Check if near left edge and should wrap to right side
+    if (pixel.x < wrapThreshold) {
+        drawFunction(pixel.x + canvas.width, pixel.y);
+    }
+    
+    // Check if near right edge and should wrap to left side  
+    if (pixel.x > canvas.width - wrapThreshold) {
+        drawFunction(pixel.x - canvas.width, pixel.y);
+    }
+}
+
 // Main drawing function
 function drawMap() {
     const now = customTimestamp ? new Date(customTimestamp) : new Date();
@@ -384,152 +400,160 @@ function drawMap() {
         ctx.stroke();
     }*/
     
-    // Draw sun position
+    // Draw sun position with wrapping
     const sunPixel = latLngToPixel(sunPos.lat, sunPos.lng);
     if (sunPixel.y >= 0 && sunPixel.y <= canvas.height) {
-        if (isGrayscale) {
-            // High contrast sun for grayscale
-            ctx.fillStyle = 'white';
-            ctx.beginPath();
-            ctx.arc(sunPixel.x, sunPixel.y, 12, 0, 2 * Math.PI);
-            ctx.fill();
-            
-            // Black border for contrast
-            ctx.strokeStyle = 'black';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(sunPixel.x, sunPixel.y, 12, 0, 2 * Math.PI);
-            ctx.stroke();
-            
-            // Add sun rays pattern
-            ctx.strokeStyle = 'black';
-            ctx.lineWidth = 1;
-            for (let i = 0; i < 8; i++) {
-                const angle = (i * Math.PI) / 4;
-                const x1 = sunPixel.x + Math.cos(angle) * 15;
-                const y1 = sunPixel.y + Math.sin(angle) * 15;
-                const x2 = sunPixel.x + Math.cos(angle) * 20;
-                const y2 = sunPixel.y + Math.sin(angle) * 20;
+        const drawSun = (x, y) => {
+            if (isGrayscale) {
+                // High contrast sun for grayscale
+                ctx.fillStyle = 'white';
                 ctx.beginPath();
-                ctx.moveTo(x1, y1);
-                ctx.lineTo(x2, y2);
+                ctx.arc(x, y, 12, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Black border for contrast
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(x, y, 12, 0, 2 * Math.PI);
                 ctx.stroke();
+                
+                // Add sun rays pattern
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 1;
+                for (let i = 0; i < 8; i++) {
+                    const angle = (i * Math.PI) / 4;
+                    const x1 = x + Math.cos(angle) * 15;
+                    const y1 = y + Math.sin(angle) * 15;
+                    const x2 = x + Math.cos(angle) * 20;
+                    const y2 = y + Math.sin(angle) * 20;
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.stroke();
+                }
+            } else {
+                // Original color sun
+                const gradient = ctx.createRadialGradient(x, y, 0, x, y, 30);
+                gradient.addColorStop(0, 'rgba(255, 215, 0, 0.8)');
+                gradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(x, y, 30, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Sun core
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.arc(x, y, 10, 0, 2 * Math.PI);
+                ctx.fill();
             }
-        } else {
-            // Original color sun
-            const gradient = ctx.createRadialGradient(sunPixel.x, sunPixel.y, 0, sunPixel.x, sunPixel.y, 30);
-            gradient.addColorStop(0, 'rgba(255, 215, 0, 0.8)');
-            gradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
-            ctx.fillStyle = gradient;
-            ctx.beginPath();
-            ctx.arc(sunPixel.x, sunPixel.y, 30, 0, 2 * Math.PI);
-            ctx.fill();
-            
-            // Sun core
-            ctx.fillStyle = '#FFD700';
-            ctx.beginPath();
-            ctx.arc(sunPixel.x, sunPixel.y, 10, 0, 2 * Math.PI);
-            ctx.fill();
-        }
+        };
+        
+        drawCelestialBodyWithWrapping(sunPixel, drawSun);
     }
     
-    // Draw moon position
+    // Draw moon position with wrapping
     const moonPixel = latLngToPixel(moonPos.lat, moonPos.lng);
     if (moonPixel.y >= 0 && moonPixel.y <= canvas.height) {
-        // Moon glow
-        const moonGradient = ctx.createRadialGradient(moonPixel.x, moonPixel.y, 0, moonPixel.x, moonPixel.y, 25);
-        moonGradient.addColorStop(0, 'rgba(220, 220, 220, 0.8)');
-        moonGradient.addColorStop(1, 'rgba(220, 220, 220, 0)');
-        ctx.fillStyle = moonGradient;
-        ctx.beginPath();
-        ctx.arc(moonPixel.x, moonPixel.y, 25, 0, 2 * Math.PI);
-        ctx.fill();
-        
-        // Draw moon with phase
-        const moonRadius = 10;
-        ctx.save();
-        ctx.translate(moonPixel.x, moonPixel.y);
-        
-        // Create clipping circle for moon
-        ctx.beginPath();
-        ctx.arc(0, 0, moonRadius, 0, 2 * Math.PI);
-        ctx.clip();
-        
-        // Fill with dark color (shadow)
-        ctx.fillStyle = isGrayscale ? 'black' : '#606060';
-        ctx.fillRect(-moonRadius, -moonRadius, moonRadius * 2, moonRadius * 2);
-        
-        // Draw the illuminated part based on actual illuminated fraction
-        ctx.fillStyle = isGrayscale ? 'white' : '#F0F0F0';
-        const illuminatedFraction = moonPos.illuminatedFraction;
-        const phase = moonPos.phase;
-        
-        // The terminator position determines how much of the moon we see
-        // illuminatedFraction = 0.5 means exactly half lit (quarter phases)
-        // illuminatedFraction = 0 means new moon (fully dark)
-        // illuminatedFraction = 1 means full moon (fully lit)
-        
-        if (phase < 180) {
-            // Waxing - light on right side
-            if (illuminatedFraction <= 0.5) {
-                // Crescent phase (0% to 50% illuminated)
-                // The terminator curves from the left edge inward
-                const terminatorX = moonRadius * (1 - 2 * illuminatedFraction);
-                
-                ctx.beginPath();
-                ctx.arc(0, 0, moonRadius, -Math.PI/2, Math.PI/2);
-                ctx.quadraticCurveTo(terminatorX, 0, 0, -moonRadius);
-                ctx.quadraticCurveTo(terminatorX, 0, 0, moonRadius);
-                ctx.fill();
+        const drawMoon = (x, y) => {
+            // Moon glow
+            const moonGradient = ctx.createRadialGradient(x, y, 0, x, y, 25);
+            moonGradient.addColorStop(0, 'rgba(220, 220, 220, 0.8)');
+            moonGradient.addColorStop(1, 'rgba(220, 220, 220, 0)');
+            ctx.fillStyle = moonGradient;
+            ctx.beginPath();
+            ctx.arc(x, y, 25, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Draw moon with phase
+            const moonRadius = 10;
+            ctx.save();
+            ctx.translate(x, y);
+            
+            // Create clipping circle for moon
+            ctx.beginPath();
+            ctx.arc(0, 0, moonRadius, 0, 2 * Math.PI);
+            ctx.clip();
+            
+            // Fill with dark color (shadow)
+            ctx.fillStyle = isGrayscale ? 'black' : '#606060';
+            ctx.fillRect(-moonRadius, -moonRadius, moonRadius * 2, moonRadius * 2);
+            
+            // Draw the illuminated part based on actual illuminated fraction
+            ctx.fillStyle = isGrayscale ? 'white' : '#F0F0F0';
+            const illuminatedFraction = moonPos.illuminatedFraction;
+            const phase = moonPos.phase;
+            
+            // The terminator position determines how much of the moon we see
+            // illuminatedFraction = 0.5 means exactly half lit (quarter phases)
+            // illuminatedFraction = 0 means new moon (fully dark)
+            // illuminatedFraction = 1 means full moon (fully lit)
+            
+            if (phase < 180) {
+                // Waxing - light on right side
+                if (illuminatedFraction <= 0.5) {
+                    // Crescent phase (0% to 50% illuminated)
+                    // The terminator curves from the left edge inward
+                    const terminatorX = moonRadius * (1 - 2 * illuminatedFraction);
+                    
+                    ctx.beginPath();
+                    ctx.arc(0, 0, moonRadius, -Math.PI/2, Math.PI/2);
+                    ctx.quadraticCurveTo(terminatorX, 0, 0, -moonRadius);
+                    ctx.quadraticCurveTo(terminatorX, 0, 0, moonRadius);
+                    ctx.fill();
+                } else {
+                    // Gibbous phase (50% to 100% illuminated)
+                    // The terminator curves from center outward to left edge
+                    const t = (illuminatedFraction - 0.5) * 2; // 0 to 1
+                    const terminatorX = -moonRadius * t;
+                    
+                    // Fill entire right half
+                    ctx.fillRect(0, -moonRadius, moonRadius, moonRadius * 2);
+                    
+                    // Add the curved part on the left
+                    ctx.beginPath();
+                    ctx.moveTo(0, -moonRadius);
+                    ctx.quadraticCurveTo(terminatorX, 0, 0, moonRadius);
+                    ctx.quadraticCurveTo(terminatorX, 0, 0, -moonRadius);
+                    ctx.closePath();
+                    ctx.fill();
+                }
             } else {
-                // Gibbous phase (50% to 100% illuminated)
-                // The terminator curves from center outward to left edge
-                const t = (illuminatedFraction - 0.5) * 2; // 0 to 1
-                const terminatorX = -moonRadius * t;
-                
-                // Fill entire right half
-                ctx.fillRect(0, -moonRadius, moonRadius, moonRadius * 2);
-                
-                // Add the curved part on the left
-                ctx.beginPath();
-                ctx.moveTo(0, -moonRadius);
-                ctx.quadraticCurveTo(terminatorX, 0, 0, moonRadius);
-                ctx.quadraticCurveTo(terminatorX, 0, 0, -moonRadius);
-                ctx.closePath();
-                ctx.fill();
+                // Waning - light on left side
+                if (illuminatedFraction <= 0.5) {
+                    // Crescent phase (0% to 50% illuminated)
+                    // The terminator curves from the right edge inward
+                    const terminatorX = -moonRadius * (1 - 2 * illuminatedFraction);
+                    
+                    ctx.beginPath();
+                    ctx.arc(0, 0, moonRadius, Math.PI/2, 3*Math.PI/2);
+                    ctx.quadraticCurveTo(terminatorX, 0, 0, moonRadius);
+                    ctx.quadraticCurveTo(terminatorX, 0, 0, -moonRadius);
+                    ctx.fill();
+                } else {
+                    // Gibbous phase (50% to 100% illuminated)
+                    // The terminator curves from center outward to right edge
+                    const t = (illuminatedFraction - 0.5) * 2; // 0 to 1
+                    const terminatorX = moonRadius * t;
+                    
+                    // Fill entire left half
+                    ctx.fillRect(-moonRadius, -moonRadius, moonRadius, moonRadius * 2);
+                    
+                    // Add the curved part on the right
+                    ctx.beginPath();
+                    ctx.moveTo(0, -moonRadius);
+                    ctx.quadraticCurveTo(terminatorX, 0, 0, moonRadius);
+                    ctx.quadraticCurveTo(terminatorX, 0, 0, -moonRadius);
+                    ctx.closePath();
+                    ctx.fill();
+                }
             }
-        } else {
-            // Waning - light on left side
-            if (illuminatedFraction <= 0.5) {
-                // Crescent phase (0% to 50% illuminated)
-                // The terminator curves from the right edge inward
-                const terminatorX = -moonRadius * (1 - 2 * illuminatedFraction);
-                
-                ctx.beginPath();
-                ctx.arc(0, 0, moonRadius, Math.PI/2, 3*Math.PI/2);
-                ctx.quadraticCurveTo(terminatorX, 0, 0, moonRadius);
-                ctx.quadraticCurveTo(terminatorX, 0, 0, -moonRadius);
-                ctx.fill();
-            } else {
-                // Gibbous phase (50% to 100% illuminated)
-                // The terminator curves from center outward to right edge
-                const t = (illuminatedFraction - 0.5) * 2; // 0 to 1
-                const terminatorX = moonRadius * t;
-                
-                // Fill entire left half
-                ctx.fillRect(-moonRadius, -moonRadius, moonRadius, moonRadius * 2);
-                
-                // Add the curved part on the right
-                ctx.beginPath();
-                ctx.moveTo(0, -moonRadius);
-                ctx.quadraticCurveTo(terminatorX, 0, 0, moonRadius);
-                ctx.quadraticCurveTo(terminatorX, 0, 0, -moonRadius);
-                ctx.closePath();
-                ctx.fill();
-            }
-        }
+            
+            ctx.restore();
+        };
         
-        ctx.restore();
+        drawCelestialBodyWithWrapping(moonPixel, drawMoon);
     }
     
     
