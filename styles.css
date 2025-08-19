@@ -6,12 +6,12 @@ body {
     color: #000000;
 }
 
-@font-face {
+/* @font-face {
 	font-family: "NicoClean";
 	font-style: normal;
 	font-weight: normal;
 	src: url(https://usetrmnl.com/fonts/NicoClean-Regular.ttf) format("truetype")
-}
+} */
 
 .container {
     max-width: 1200px;
@@ -89,7 +89,8 @@ h1 {
 .minimal-mode body {
     padding: 0;
     margin: 0;
-    font-family: NicoClean, 'Inter', Arial, sans-serif;
+    /* font-family: NicoClean, 'Inter', Arial, sans-serif; */
+    font-family: 'Inter', Arial, sans-serif;
 }
 
 .minimal-mode .container {
