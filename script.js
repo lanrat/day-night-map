@@ -485,69 +485,123 @@ function drawMap() {
             const illuminatedFraction = moonPos.illuminatedFraction;
             const phase = moonPos.phase;
             
-            // The terminator position determines how much of the moon we see
-            // illuminatedFraction = 0.5 means exactly half lit (quarter phases)
+            // Create accurate moon phase using proper elliptical terminator
             // illuminatedFraction = 0 means new moon (fully dark)
+            // illuminatedFraction = 0.5 means quarter moon (half lit)  
             // illuminatedFraction = 1 means full moon (fully lit)
             
-            if (phase < 180) {
-                // Waxing - light on right side
-                if (illuminatedFraction <= 0.5) {
-                    // Crescent phase (0% to 50% illuminated)
-                    // The terminator curves from the left edge inward
-                    const terminatorX = moonRadius * (1 - 2 * illuminatedFraction);
-                    
-                    ctx.beginPath();
-                    ctx.arc(0, 0, moonRadius, -Math.PI/2, Math.PI/2);
-                    ctx.quadraticCurveTo(terminatorX, 0, 0, -moonRadius);
-                    ctx.quadraticCurveTo(terminatorX, 0, 0, moonRadius);
-                    ctx.fill();
+            if (illuminatedFraction > 0.01) { // Don't draw anything for new moon
+                ctx.beginPath();
+                
+                if (phase < 180) {
+                    // Waxing phases - illuminated portion on right side
+                    if (illuminatedFraction < 0.5) {
+                        // Waxing crescent - draw crescent on right
+                        const k = 2 * illuminatedFraction - 1; // -1 to 0
+                        const a = moonRadius * Math.abs(k); // ellipse width
+                        
+                        // Right semi-circle (always visible part)
+                        ctx.arc(0, 0, moonRadius, -Math.PI/2, Math.PI/2, false);
+                        
+                        // Elliptical terminator curve
+                        for (let angle = -Math.PI/2; angle <= Math.PI/2; angle += 0.1) {
+                            const y = moonRadius * Math.sin(angle);
+                            const x = a * Math.cos(angle);
+                            if (angle === -Math.PI/2) {
+                                ctx.lineTo(x, y);
+                            } else {
+                                ctx.lineTo(x, y);
+                            }
+                        }
+                        ctx.closePath();
+                    } else {
+                        // Waxing gibbous - draw most of circle except left crescent
+                        const k = 2 * illuminatedFraction - 1; // 0 to 1
+                        const a = moonRadius * k; // ellipse width
+                        
+                        // Full circle
+                        ctx.arc(0, 0, moonRadius, 0, 2 * Math.PI, false);
+                        ctx.fill();
+                        
+                        // Subtract the dark crescent on left
+                        ctx.globalCompositeOperation = 'destination-out';
+                        ctx.beginPath();
+                        ctx.arc(0, 0, moonRadius, Math.PI/2, 3*Math.PI/2, false);
+                        
+                        for (let angle = Math.PI/2; angle <= 3*Math.PI/2; angle += 0.1) {
+                            const y = moonRadius * Math.sin(angle);
+                            const x = -a * Math.cos(angle);
+                            ctx.lineTo(x, y);
+                        }
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.globalCompositeOperation = 'source-over';
+                        
+                        // Re-draw to fix any artifacts
+                        ctx.fillStyle = isGrayscale ? 'white' : '#F0F0F0';
+                        ctx.beginPath();
+                        ctx.arc(0, 0, moonRadius, -Math.PI/2, Math.PI/2, false);
+                        for (let angle = -Math.PI/2; angle <= Math.PI/2; angle += 0.1) {
+                            const y = moonRadius * Math.sin(angle);
+                            const x = -a * Math.cos(angle);
+                            ctx.lineTo(x, y);
+                        }
+                        ctx.closePath();
+                    }
                 } else {
-                    // Gibbous phase (50% to 100% illuminated)
-                    // The terminator curves from center outward to left edge
-                    const t = (illuminatedFraction - 0.5) * 2; // 0 to 1
-                    const terminatorX = -moonRadius * t;
-                    
-                    // Fill entire right half
-                    ctx.fillRect(0, -moonRadius, moonRadius, moonRadius * 2);
-                    
-                    // Add the curved part on the left
-                    ctx.beginPath();
-                    ctx.moveTo(0, -moonRadius);
-                    ctx.quadraticCurveTo(terminatorX, 0, 0, moonRadius);
-                    ctx.quadraticCurveTo(terminatorX, 0, 0, -moonRadius);
-                    ctx.closePath();
-                    ctx.fill();
+                    // Waning phases - illuminated portion on left side  
+                    if (illuminatedFraction < 0.5) {
+                        // Waning crescent - draw crescent on left
+                        const k = 2 * illuminatedFraction - 1; // -1 to 0
+                        const a = moonRadius * Math.abs(k); // ellipse width
+                        
+                        // Left semi-circle (always visible part)
+                        ctx.arc(0, 0, moonRadius, Math.PI/2, 3*Math.PI/2, false);
+                        
+                        // Elliptical terminator curve  
+                        for (let angle = 3*Math.PI/2; angle >= Math.PI/2; angle -= 0.1) {
+                            const y = moonRadius * Math.sin(angle);
+                            const x = -a * Math.cos(angle);
+                            ctx.lineTo(x, y);
+                        }
+                        ctx.closePath();
+                    } else {
+                        // Waning gibbous - draw most of circle except right crescent
+                        const k = 2 * illuminatedFraction - 1; // 0 to 1  
+                        const a = moonRadius * k; // ellipse width
+                        
+                        // Full circle
+                        ctx.arc(0, 0, moonRadius, 0, 2 * Math.PI, false);
+                        ctx.fill();
+                        
+                        // Subtract the dark crescent on right
+                        ctx.globalCompositeOperation = 'destination-out';
+                        ctx.beginPath();
+                        ctx.arc(0, 0, moonRadius, -Math.PI/2, Math.PI/2, false);
+                        
+                        for (let angle = -Math.PI/2; angle <= Math.PI/2; angle += 0.1) {
+                            const y = moonRadius * Math.sin(angle);
+                            const x = a * Math.cos(angle);
+                            ctx.lineTo(x, y);
+                        }
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.globalCompositeOperation = 'source-over';
+                        
+                        // Re-draw to fix any artifacts
+                        ctx.fillStyle = isGrayscale ? 'white' : '#F0F0F0';
+                        ctx.beginPath();
+                        ctx.arc(0, 0, moonRadius, Math.PI/2, 3*Math.PI/2, false);
+                        for (let angle = Math.PI/2; angle <= 3*Math.PI/2; angle += 0.1) {
+                            const y = moonRadius * Math.sin(angle);
+                            const x = a * Math.cos(angle);
+                            ctx.lineTo(x, y);
+                        }
+                        ctx.closePath();
+                    }
                 }
-            } else {
-                // Waning - light on left side
-                if (illuminatedFraction <= 0.5) {
-                    // Crescent phase (0% to 50% illuminated)
-                    // The terminator curves from the right edge inward
-                    const terminatorX = -moonRadius * (1 - 2 * illuminatedFraction);
-                    
-                    ctx.beginPath();
-                    ctx.arc(0, 0, moonRadius, Math.PI/2, 3*Math.PI/2);
-                    ctx.quadraticCurveTo(terminatorX, 0, 0, moonRadius);
-                    ctx.quadraticCurveTo(terminatorX, 0, 0, -moonRadius);
-                    ctx.fill();
-                } else {
-                    // Gibbous phase (50% to 100% illuminated)
-                    // The terminator curves from center outward to right edge
-                    const t = (illuminatedFraction - 0.5) * 2; // 0 to 1
-                    const terminatorX = moonRadius * t;
-                    
-                    // Fill entire left half
-                    ctx.fillRect(-moonRadius, -moonRadius, moonRadius, moonRadius * 2);
-                    
-                    // Add the curved part on the right
-                    ctx.beginPath();
-                    ctx.moveTo(0, -moonRadius);
-                    ctx.quadraticCurveTo(terminatorX, 0, 0, moonRadius);
-                    ctx.quadraticCurveTo(terminatorX, 0, 0, -moonRadius);
-                    ctx.closePath();
-                    ctx.fill();
-                }
+                
+                ctx.fill();
             }
             
             ctx.restore();
