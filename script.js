@@ -551,6 +551,13 @@ function drawMap() {
             }
             
             ctx.restore();
+            
+            // Add 1px outline for visibility on light backgrounds
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(x, y, moonRadius, 0, 2 * Math.PI);
+            ctx.stroke();
         };
         
         drawCelestialBodyWithWrapping(moonPixel, drawMoon);
