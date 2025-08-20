@@ -42,87 +42,88 @@ if (!displayTimezone) {
 const CONFIG = {
     sun: {
         grayscale: {
-            radius: 12,
-            rayLength: 20,
-            fillColor: 'white',
-            strokeColor: 'black',
-            rayColor: 'black'
+            radius: 12,             // Radius of sun circle in grayscale mode (pixels)
+            rayLength: 20,          // Length of sun rays extending from circle (pixels)
+            fillColor: 'white',     // Fill color of sun circle in grayscale mode
+            strokeColor: 'black',   // Border color of sun circle in grayscale mode
+            rayColor: 'black'       // Color of sun rays in grayscale mode
         },
         color: {
-            glowRadius: 30,
-            coreRadius: 10,
+            glowRadius: 30,         // Radius of sun glow effect in color mode (pixels)
+            coreRadius: 10,         // Radius of sun core circle in color mode (pixels)
             glowColor: {
-                start: 'rgba(255, 215, 0, 0.8)',
-                end: 'rgba(255, 215, 0, 0)'
+                start: 'rgba(255, 215, 0, 0.8)',  // Inner color of sun glow gradient
+                end: 'rgba(255, 215, 0, 0)'       // Outer color of sun glow gradient (transparent)
             },
-            coreColor: '#FFD700'
+            coreColor: '#FFD700'    // Color of sun core circle in color mode
         }
     },
     moon: {
-        radius: 10,
-        glowRadius: 25,
+        radius: 8,                 // Radius of moon circle (pixels)
+        glowRadius: 25,             // Radius of moon glow effect (pixels)
         glowColor: {
-            start: 'rgba(220, 220, 220, 0.8)',
-            end: 'rgba(220, 220, 220, 0)'
+            start: 'rgba(220, 220, 220, 0.8)',  // Inner color of moon glow gradient
+            end: 'rgba(220, 220, 220, 0)'       // Outer color of moon glow gradient (transparent)
         },
         color: {
             light: {
-                grayscale: 'white',
-                color: '#F0F0F0'
+                grayscale: 'white', // Color of illuminated moon surface in grayscale mode
+                color: '#F0F0F0'    // Color of illuminated moon surface in color mode
             },
             shadow: {
-                grayscale: 'black',
-                color: '#606060'
+                grayscale: 'black', // Color of moon shadow/dark side in grayscale mode
+                color: '#606060'    // Color of moon shadow/dark side in color mode
             }
         },
-        strokeColor: 'rgba(0, 0, 0, 0.8)'
+        strokeColor: 'rgba(0, 0, 0, 0.8)'  // Color of moon outline/border
     },
     night: {
         grayscale: {
-            color: [0, 0, 0],
+            color: [0, 0, 0],       // RGB color array for night overlay in grayscale mode
             opacity: {
-                deepNight: 0.70,
-                twilight: 0.25
+                deepNight: 0.70,    // Opacity of night overlay in deep night (grayscale mode)
+                twilight: 0.25      // Opacity of night overlay in twilight (grayscale mode)
             }
         },
         color: {
-            color: [0, 0, 30],
+            color: [0, 0, 30],      // RGB color array for night overlay in color mode (dark blue)
             opacity: {
-                deepNight: 0.8,
-                astronomicalTwilight: 0.6,
-                nauticalTwilight: 0.2
+                deepNight: 0.8,             // Opacity of night overlay in deep night (color mode)
+                astronomicalTwilight: 0.6,  // Opacity of night overlay in astronomical twilight (color mode)
+                nauticalTwilight: 0.2       // Opacity of night overlay in nautical twilight (color mode)
             }
         }
     },
     performance: {
-        pixelSize: 2, // Balanced performance and quality for night overlay rendering
-        updateInterval: 60000 // Update every minute (milliseconds)
+        pixelSize: 2,               // Size of pixels for night overlay rendering (larger = faster, lower quality)
+        updateInterval: 60000       // Auto-refresh interval in milliseconds (60000 = 1 minute)
     },
     visual: {
         canvas: {
-            defaultWidth: 1000,
-            defaultHeight: 500
+            defaultWidth: 1000,     // Default canvas width in normal mode (pixels)
+            defaultHeight: 500      // Default canvas height in normal mode (pixels)
         },
         lineWidths: {
-            sunStroke: 2,
-            sunRays: 1,
-            moonStroke: 1,
-            terminator: 2
+            sunStroke: 2,           // Line width of sun border in grayscale mode (pixels)
+            sunRays: 1,             // Line width of sun rays in grayscale mode (pixels)
+            moonStroke: 1,          // Line width of moon outline/border (pixels)
+            terminator: 2           // Line width of day/night terminator line (pixels, currently unused)
         },
-        sunRayCount: 8,
-        edgeWrapThreshold: 50 // Pixels from edge to wrap celestial bodies
+        sunRayCount: 8,             // Number of sun rays to draw in grayscale mode
+        edgeWrapThreshold: 50,      // Distance from canvas edge to wrap celestial bodies (pixels)
+        showTerminator: false        // Show the terminator line between day/night
     },
     calculation: {
-        moonPhaseStep: 0.1, // Step size for moon phase curve calculation
-        terminatorStep: 2 // Longitude step for terminator calculation
+        moonPhaseStep: 0.1,         // Angular step size for moon phase curve calculation (radians, smaller = smoother)
+        terminatorStep: 2           // Longitude step for terminator line calculation (degrees, smaller = smoother)
     },
     solarElevation: {
-        deepNight: -12, // Below this is deep night
-        astronomicalTwilight: -6, // Astronomical twilight boundary
-        nauticalTwilight: -1, // Nautical/civil twilight boundary
-        horizon: 0, // Day/night boundary
-        grayscaleDeepNight: -6, // Grayscale mode deep night threshold
-        grayscaleTwilight: 0 // Grayscale mode twilight threshold
+        deepNight: -12,             // Solar elevation below which is considered deep night (degrees)
+        astronomicalTwilight: -6,   // Solar elevation for astronomical twilight boundary (degrees)
+        nauticalTwilight: -1,       // Solar elevation for nautical/civil twilight boundary (degrees)
+        horizon: 0,                 // Solar elevation for day/night boundary (degrees)
+        grayscaleDeepNight: -6,     // Solar elevation for deep night in grayscale mode (degrees)
+        grayscaleTwilight: 0        // Solar elevation for twilight in grayscale mode (degrees)
     }
 };
 
@@ -477,17 +478,19 @@ function drawMap() {
     ctx.putImageData(imageData, 0, 0);
     
     // Draw terminator line
-    /*const terminatorPoints = getTerminatorPoints(sunPos);
-    if (terminatorPoints.length > 1) {
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        terminatorPoints.forEach((point, i) => {
-            if (i === 0) ctx.moveTo(point.x, point.y);
-            else ctx.lineTo(point.x, point.y);
-        });
-        ctx.stroke();
-    }*/
+    if (CONFIG.visual.showTerminator){
+        const terminatorPoints = getTerminatorPoints(sunPos);
+        if (terminatorPoints.length > 1) {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            terminatorPoints.forEach((point, i) => {
+                if (i === 0) ctx.moveTo(point.x, point.y);
+                else ctx.lineTo(point.x, point.y);
+            });
+            ctx.stroke();
+        }
+    }
     
     // Draw sun position with wrapping
     const sunPixel = latLngToPixel(sunPos.lat, sunPos.lng);

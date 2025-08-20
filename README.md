@@ -32,6 +32,7 @@ All parameters can be combined and used with either query string (`?`) or hash (
 - `timezone=<value>` - Display date/time in specified timezone (IANA timezone name, defaults to user's local timezone)
 
 **Examples:**
+
 - `?minimal&grayscale` - Minimal grayscale mode
 - `?timestamp=1672531200` - New Year 2023 at midnight UTC
 - `?timezone=America/New_York` - Display time in Eastern timezone
