@@ -38,6 +38,94 @@ if (!displayTimezone) {
     displayTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 }
 
+// Configuration for celestial body sizes and colors
+const CONFIG = {
+    sun: {
+        grayscale: {
+            radius: 12,
+            rayLength: 20,
+            fillColor: 'white',
+            strokeColor: 'black',
+            rayColor: 'black'
+        },
+        color: {
+            glowRadius: 30,
+            coreRadius: 10,
+            glowColor: {
+                start: 'rgba(255, 215, 0, 0.8)',
+                end: 'rgba(255, 215, 0, 0)'
+            },
+            coreColor: '#FFD700'
+        }
+    },
+    moon: {
+        radius: 10,
+        glowRadius: 25,
+        glowColor: {
+            start: 'rgba(220, 220, 220, 0.8)',
+            end: 'rgba(220, 220, 220, 0)'
+        },
+        color: {
+            light: {
+                grayscale: 'white',
+                color: '#F0F0F0'
+            },
+            shadow: {
+                grayscale: 'black',
+                color: '#606060'
+            }
+        },
+        strokeColor: 'rgba(0, 0, 0, 0.8)'
+    },
+    night: {
+        grayscale: {
+            color: [0, 0, 0],
+            opacity: {
+                deepNight: 0.70,
+                twilight: 0.25
+            }
+        },
+        color: {
+            color: [0, 0, 30],
+            opacity: {
+                deepNight: 0.8,
+                astronomicalTwilight: 0.6,
+                nauticalTwilight: 0.2
+            }
+        }
+    },
+    performance: {
+        pixelSize: 2, // Balanced performance and quality for night overlay rendering
+        updateInterval: 60000 // Update every minute (milliseconds)
+    },
+    visual: {
+        canvas: {
+            defaultWidth: 1000,
+            defaultHeight: 500
+        },
+        lineWidths: {
+            sunStroke: 2,
+            sunRays: 1,
+            moonStroke: 1,
+            terminator: 2
+        },
+        sunRayCount: 8,
+        edgeWrapThreshold: 50 // Pixels from edge to wrap celestial bodies
+    },
+    calculation: {
+        moonPhaseStep: 0.1, // Step size for moon phase curve calculation
+        terminatorStep: 2 // Longitude step for terminator calculation
+    },
+    solarElevation: {
+        deepNight: -12, // Below this is deep night
+        astronomicalTwilight: -6, // Astronomical twilight boundary
+        nauticalTwilight: -1, // Nautical/civil twilight boundary
+        horizon: 0, // Day/night boundary
+        grayscaleDeepNight: -6, // Grayscale mode deep night threshold
+        grayscaleTwilight: 0 // Grayscale mode twilight threshold
+    }
+};
+
 // Apply modes if requested
 if (isMinimal) {
     document.documentElement.classList.add('minimal-mode');
@@ -59,8 +147,8 @@ function updateCanvasSize() {
         canvas.height = rect.height;
     } else {
         // Normal mode - fixed size
-        canvas.width = 1000;
-        canvas.height = 500;
+        canvas.width = CONFIG.visual.canvas.defaultWidth;
+        canvas.height = CONFIG.visual.canvas.defaultHeight;
     }
 }
 
@@ -276,7 +364,7 @@ function getSolarElevation(lat, lng, sunLat, sunLng) {
 // Calculate day/night terminator line points
 function getTerminatorPoints(sunPos) {
     const points = [];
-    for (let lng = -180; lng <= 180; lng += 2) {
+    for (let lng = -180; lng <= 180; lng += CONFIG.calculation.terminatorStep) {
         // Find latitude where solar elevation equals 0
         for (let lat = -90; lat <= 90; lat += 1) {
             const elevation = getSolarElevation(lat, lng, sunPos.lat, sunPos.lng);
@@ -295,7 +383,7 @@ function getTerminatorPoints(sunPos) {
 }
 
 // Helper function to draw celestial body with edge wrapping
-function drawCelestialBodyWithWrapping(pixel, drawFunction, wrapThreshold = 50) {
+function drawCelestialBodyWithWrapping(pixel, drawFunction, wrapThreshold = CONFIG.visual.edgeWrapThreshold) {
     // Always draw the primary icon
     drawFunction(pixel.x, pixel.y);
     
@@ -320,7 +408,7 @@ function drawMap() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     // Draw night overlay with optimized approach for grayscale
-    const pixelSize = 2; // Balanced performance and quality
+    const pixelSize = CONFIG.performance.pixelSize;
     
     // Use image data for smooth pixel manipulation
     const imageData = ctx.createImageData(canvas.width, canvas.height);
@@ -340,32 +428,33 @@ function drawMap() {
             
             // Create overlay with different approach for grayscale
             let alpha = 0;
-            let color = [0, 0, 30]; // Default blue for color mode
+            let color;
             
             if (isGrayscale) {
                 // Simplified 3-shade approach for 3-bit grayscale
-                color = [0, 0, 0]; // Pure black overlay
-                if (elevation < -6) {
-                    alpha = 0.70; // Dark night (lighter to show map underneath)
-                } else if (elevation < 0) {
-                    alpha = 0.25; // Twilight (lighter)
+                color = CONFIG.night.grayscale.color;
+                if (elevation < CONFIG.solarElevation.grayscaleDeepNight) {
+                    alpha = CONFIG.night.grayscale.opacity.deepNight; // Dark night (lighter to show map underneath)
+                } else if (elevation < CONFIG.solarElevation.grayscaleTwilight) {
+                    alpha = CONFIG.night.grayscale.opacity.twilight; // Twilight (lighter)
                 }
             } else {
                 // Original smooth gradient for color displays
-                if (elevation < -12) {
-                    alpha = 0.8; // Deep night
-                } else if (elevation < -6) {
+                color = CONFIG.night.color.color;
+                if (elevation < CONFIG.solarElevation.deepNight) {
+                    alpha = CONFIG.night.color.opacity.deepNight; // Deep night
+                } else if (elevation < CONFIG.solarElevation.astronomicalTwilight) {
                     // Astronomical twilight
-                    const factor = (elevation + 12) / 6;
-                    alpha = 0.8 - (0.2 * factor);
-                } else if (elevation < -1) {
+                    const factor = (elevation - CONFIG.solarElevation.deepNight) / (CONFIG.solarElevation.astronomicalTwilight - CONFIG.solarElevation.deepNight);
+                    alpha = CONFIG.night.color.opacity.deepNight - ((CONFIG.night.color.opacity.deepNight - CONFIG.night.color.opacity.astronomicalTwilight) * factor);
+                } else if (elevation < CONFIG.solarElevation.nauticalTwilight) {
                     // Nautical/civil twilight
-                    const factor = (elevation + 6) / 5;
-                    alpha = 0.6 - (0.4 * factor);
-                } else if (elevation < 0) {
+                    const factor = (elevation - CONFIG.solarElevation.astronomicalTwilight) / (CONFIG.solarElevation.nauticalTwilight - CONFIG.solarElevation.astronomicalTwilight);
+                    alpha = CONFIG.night.color.opacity.astronomicalTwilight - ((CONFIG.night.color.opacity.astronomicalTwilight - CONFIG.night.color.opacity.nauticalTwilight) * factor);
+                } else if (elevation < CONFIG.solarElevation.horizon) {
                     // Very light twilight at horizon
-                    const factor = (elevation + 1) / 1;
-                    alpha = 0.2 - (0.2 * factor);
+                    const factor = (elevation - CONFIG.solarElevation.nauticalTwilight) / (CONFIG.solarElevation.horizon - CONFIG.solarElevation.nauticalTwilight);
+                    alpha = CONFIG.night.color.opacity.nauticalTwilight - (CONFIG.night.color.opacity.nauticalTwilight * factor);
                 }
             }
             
@@ -406,46 +495,50 @@ function drawMap() {
         const drawSun = (x, y) => {
             if (isGrayscale) {
                 // High contrast sun for grayscale
-                ctx.fillStyle = 'white';
+                const sunConfig = CONFIG.sun.grayscale;
+                
+                ctx.fillStyle = sunConfig.fillColor;
                 ctx.beginPath();
-                ctx.arc(x, y, 12, 0, 2 * Math.PI);
+                ctx.arc(x, y, sunConfig.radius, 0, 2 * Math.PI);
                 ctx.fill();
                 
-                // Black border for contrast
-                ctx.strokeStyle = 'black';
-                ctx.lineWidth = 2;
+                // Border for contrast
+                ctx.strokeStyle = sunConfig.strokeColor;
+                ctx.lineWidth = CONFIG.visual.lineWidths.sunStroke;
                 ctx.beginPath();
-                ctx.arc(x, y, 12, 0, 2 * Math.PI);
+                ctx.arc(x, y, sunConfig.radius, 0, 2 * Math.PI);
                 ctx.stroke();
                 
                 // Add sun rays pattern
-                ctx.strokeStyle = 'black';
-                ctx.lineWidth = 1;
-                for (let i = 0; i < 8; i++) {
-                    const angle = (i * Math.PI) / 4;
-                    const x1 = x + Math.cos(angle) * 15;
-                    const y1 = y + Math.sin(angle) * 15;
-                    const x2 = x + Math.cos(angle) * 20;
-                    const y2 = y + Math.sin(angle) * 20;
+                ctx.strokeStyle = sunConfig.rayColor;
+                ctx.lineWidth = CONFIG.visual.lineWidths.sunRays;
+                for (let i = 0; i < CONFIG.visual.sunRayCount; i++) {
+                    const angle = (i * Math.PI) / (CONFIG.visual.sunRayCount / 2);
+                    const x1 = x + Math.cos(angle) * (sunConfig.radius + 3);
+                    const y1 = y + Math.sin(angle) * (sunConfig.radius + 3);
+                    const x2 = x + Math.cos(angle) * sunConfig.rayLength;
+                    const y2 = y + Math.sin(angle) * sunConfig.rayLength;
                     ctx.beginPath();
                     ctx.moveTo(x1, y1);
                     ctx.lineTo(x2, y2);
                     ctx.stroke();
                 }
             } else {
-                // Original color sun
-                const gradient = ctx.createRadialGradient(x, y, 0, x, y, 30);
-                gradient.addColorStop(0, 'rgba(255, 215, 0, 0.8)');
-                gradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
+                // Color sun
+                const sunConfig = CONFIG.sun.color;
+                
+                const gradient = ctx.createRadialGradient(x, y, 0, x, y, sunConfig.glowRadius);
+                gradient.addColorStop(0, sunConfig.glowColor.start);
+                gradient.addColorStop(1, sunConfig.glowColor.end);
                 ctx.fillStyle = gradient;
                 ctx.beginPath();
-                ctx.arc(x, y, 30, 0, 2 * Math.PI);
+                ctx.arc(x, y, sunConfig.glowRadius, 0, 2 * Math.PI);
                 ctx.fill();
                 
                 // Sun core
-                ctx.fillStyle = '#FFD700';
+                ctx.fillStyle = sunConfig.coreColor;
                 ctx.beginPath();
-                ctx.arc(x, y, 10, 0, 2 * Math.PI);
+                ctx.arc(x, y, sunConfig.coreRadius, 0, 2 * Math.PI);
                 ctx.fill();
             }
         };
@@ -458,16 +551,17 @@ function drawMap() {
     if (moonPixel.y >= 0 && moonPixel.y <= canvas.height) {
         const drawMoon = (x, y) => {
             // Moon glow
-            const moonGradient = ctx.createRadialGradient(x, y, 0, x, y, 25);
-            moonGradient.addColorStop(0, 'rgba(220, 220, 220, 0.8)');
-            moonGradient.addColorStop(1, 'rgba(220, 220, 220, 0)');
+            const moonConfig = CONFIG.moon;
+            const moonGradient = ctx.createRadialGradient(x, y, 0, x, y, moonConfig.glowRadius);
+            moonGradient.addColorStop(0, moonConfig.glowColor.start);
+            moonGradient.addColorStop(1, moonConfig.glowColor.end);
             ctx.fillStyle = moonGradient;
             ctx.beginPath();
-            ctx.arc(x, y, 25, 0, 2 * Math.PI);
+            ctx.arc(x, y, moonConfig.glowRadius, 0, 2 * Math.PI);
             ctx.fill();
             
             // Draw moon with phase
-            const moonRadius = 10;
+            const moonRadius = CONFIG.moon.radius;
             ctx.save();
             ctx.translate(x, y);
             
@@ -477,11 +571,11 @@ function drawMap() {
             ctx.clip();
             
             // Fill with dark color (shadow)
-            ctx.fillStyle = isGrayscale ? 'black' : '#606060';
+            ctx.fillStyle = isGrayscale ? moonConfig.color.shadow.grayscale : moonConfig.color.shadow.color;
             ctx.fillRect(-moonRadius, -moonRadius, moonRadius * 2, moonRadius * 2);
             
             // Draw the illuminated part based on actual illuminated fraction
-            ctx.fillStyle = isGrayscale ? 'white' : '#F0F0F0';
+            ctx.fillStyle = isGrayscale ? moonConfig.color.light.grayscale : moonConfig.color.light.color;
             const illuminatedFraction = moonPos.illuminatedFraction;
             const phase = moonPos.phase;
             
@@ -504,7 +598,7 @@ function drawMap() {
                         ctx.arc(0, 0, moonRadius, -Math.PI/2, Math.PI/2, false);
                         
                         // Elliptical terminator curve
-                        for (let angle = -Math.PI/2; angle <= Math.PI/2; angle += 0.1) {
+                        for (let angle = -Math.PI/2; angle <= Math.PI/2; angle += CONFIG.calculation.moonPhaseStep) {
                             const y = moonRadius * Math.sin(angle);
                             const x = a * Math.cos(angle);
                             if (angle === -Math.PI/2) {
@@ -528,7 +622,7 @@ function drawMap() {
                         ctx.beginPath();
                         ctx.arc(0, 0, moonRadius, Math.PI/2, 3*Math.PI/2, false);
                         
-                        for (let angle = Math.PI/2; angle <= 3*Math.PI/2; angle += 0.1) {
+                        for (let angle = Math.PI/2; angle <= 3*Math.PI/2; angle += CONFIG.calculation.moonPhaseStep) {
                             const y = moonRadius * Math.sin(angle);
                             const x = -a * Math.cos(angle);
                             ctx.lineTo(x, y);
@@ -538,10 +632,10 @@ function drawMap() {
                         ctx.globalCompositeOperation = 'source-over';
                         
                         // Re-draw to fix any artifacts
-                        ctx.fillStyle = isGrayscale ? 'white' : '#F0F0F0';
+                        ctx.fillStyle = isGrayscale ? moonConfig.color.light.grayscale : moonConfig.color.light.color;
                         ctx.beginPath();
                         ctx.arc(0, 0, moonRadius, -Math.PI/2, Math.PI/2, false);
-                        for (let angle = -Math.PI/2; angle <= Math.PI/2; angle += 0.1) {
+                        for (let angle = -Math.PI/2; angle <= Math.PI/2; angle += CONFIG.calculation.moonPhaseStep) {
                             const y = moonRadius * Math.sin(angle);
                             const x = -a * Math.cos(angle);
                             ctx.lineTo(x, y);
@@ -559,7 +653,7 @@ function drawMap() {
                         ctx.arc(0, 0, moonRadius, Math.PI/2, 3*Math.PI/2, false);
                         
                         // Elliptical terminator curve  
-                        for (let angle = 3*Math.PI/2; angle >= Math.PI/2; angle -= 0.1) {
+                        for (let angle = 3*Math.PI/2; angle >= Math.PI/2; angle -= CONFIG.calculation.moonPhaseStep) {
                             const y = moonRadius * Math.sin(angle);
                             const x = -a * Math.cos(angle);
                             ctx.lineTo(x, y);
@@ -579,7 +673,7 @@ function drawMap() {
                         ctx.beginPath();
                         ctx.arc(0, 0, moonRadius, -Math.PI/2, Math.PI/2, false);
                         
-                        for (let angle = -Math.PI/2; angle <= Math.PI/2; angle += 0.1) {
+                        for (let angle = -Math.PI/2; angle <= Math.PI/2; angle += CONFIG.calculation.moonPhaseStep) {
                             const y = moonRadius * Math.sin(angle);
                             const x = a * Math.cos(angle);
                             ctx.lineTo(x, y);
@@ -589,10 +683,10 @@ function drawMap() {
                         ctx.globalCompositeOperation = 'source-over';
                         
                         // Re-draw to fix any artifacts
-                        ctx.fillStyle = isGrayscale ? 'white' : '#F0F0F0';
+                        ctx.fillStyle = isGrayscale ? moonConfig.color.light.grayscale : moonConfig.color.light.color;
                         ctx.beginPath();
                         ctx.arc(0, 0, moonRadius, Math.PI/2, 3*Math.PI/2, false);
-                        for (let angle = Math.PI/2; angle <= 3*Math.PI/2; angle += 0.1) {
+                        for (let angle = Math.PI/2; angle <= 3*Math.PI/2; angle += CONFIG.calculation.moonPhaseStep) {
                             const y = moonRadius * Math.sin(angle);
                             const x = a * Math.cos(angle);
                             ctx.lineTo(x, y);
@@ -606,9 +700,9 @@ function drawMap() {
             
             ctx.restore();
             
-            // Add 1px outline for visibility on light backgrounds
-            ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
-            ctx.lineWidth = 1;
+            // Add outline for visibility on light backgrounds
+            ctx.strokeStyle = moonConfig.strokeColor;
+            ctx.lineWidth = CONFIG.visual.lineWidths.moonStroke;
             ctx.beginPath();
             ctx.arc(x, y, moonRadius, 0, 2 * Math.PI);
             ctx.stroke();
@@ -669,5 +763,5 @@ function drawMap() {
 // Initial draw and set up auto-refresh (only if no custom timestamp)
 drawMap();
 if (!customTimestamp) {
-    setInterval(drawMap, 60000); // Update every minute
+    setInterval(drawMap, CONFIG.performance.updateInterval);
 }

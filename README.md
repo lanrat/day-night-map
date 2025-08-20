@@ -50,3 +50,13 @@ Grayscale mode provides optimized rendering for limited-color displays by using 
 The map updates every minute to reflect current conditions. When using the `timestamp` parameter, the map displays a static snapshot of that specific moment and does not auto-refresh.
 
 Inspired by [Time and Date Day and Night World Map](https://www.timeanddate.com/worldclock/sunearth.html)
+
+## Developing
+
+Test with
+
+```shell
+python3 -m http.server
+```
+
+Then visit [http://localhost:8000/](http://localhost:8000/)

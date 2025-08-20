@@ -10,7 +10,8 @@
         "minidocks",
         "rgba",
         "scrollbars",
-        "Steinberg"
+        "Steinberg",
+        "stylesheet"
     ],
     "ignoreWords": [],
     "import": []
