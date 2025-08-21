@@ -115,7 +115,7 @@ const CONFIG = {
     },
     calculation: {
         moonPhaseStep: 0.1,         // Angular step size for moon phase curve calculation (radians, smaller = smoother)
-        terminatorStep: 2           // Longitude step for terminator line calculation (degrees, smaller = smoother)
+        terminatorStep: 1           // Longitude step for terminator line calculation (degrees, smaller = smoother)
     },
     solarElevation: {
         deepNight: -12,             // Solar elevation below which is considered deep night (degrees)
@@ -304,6 +304,8 @@ function getLunarPosition(date) {
         lat: declination,
         lng: moonLongitude,
         phase: elongation,
+        // TODO this does not seem to work when >= 0.5
+        // also drawing may be inverted...
         illuminatedFraction: illuminatedFraction
     };
 }
