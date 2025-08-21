@@ -3,6 +3,8 @@
 `https://usetrmnl.com/framework/background`
 `https://usetrmnl.com/blog/design-system`
 
+## Hex
+
 * black  #000000
 * gray-1 #2a2a2a
 * gray-2 #545454
