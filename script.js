@@ -245,29 +245,28 @@ function latLngToPixel(lat, lng) {
     return { x, y };
 }
 
-// Calculate solar position based on date and time
+// Calculate solar position based on date and time (hybrid approach)
 function getSolarPosition(date) {
-    const MILLISECONDS_PER_DAY = 86400000; // 24 * 60 * 60 * 1000
-
-    // Simple, reliable approach
-    const dayOfYear = Math.floor((date - new Date(date.getFullYear(), 0, 0)) / MILLISECONDS_PER_DAY);
-    const hours = date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
-    
-    // Solar declination (simple but accurate enough)
+    // Calculate solar declination directly (this method works reliably)
+    const dayOfYear = Math.floor((date - new Date(date.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
     const declination = -23.45 * Math.cos(2 * Math.PI * (dayOfYear + 10) / 365.25);
     
-    // Solar longitude: where sun is directly overhead
-    // At UTC noon (12:00), sun is at longitude 0°
-    // Sun moves 15° west per hour (360° / 24 hours)
+    // Calculate longitude where sun is directly overhead (subsolar point)
+    // Solar time equation: 15° per hour, sun is at 0° longitude at 12:00 UTC
+    const hours = date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
     const sunLongitude = -(hours - 12) * 15;
+    
+    const normalizedLng = sunLongitude > 180 ? sunLongitude - 360 : sunLongitude < -180 ? sunLongitude + 360 : sunLongitude;
+    
+    console.log(`Solar position: lat=${declination.toFixed(2)}°, lng=${normalizedLng.toFixed(2)}°`);
     
     return {
         lat: declination,
-        lng: sunLongitude > 180 ? sunLongitude - 360 : sunLongitude < -180 ? sunLongitude + 360 : sunLongitude
+        lng: normalizedLng
     };
 }
 
-// Calculate lunar position based on date and time
+// Calculate lunar position based on date and time (use original calculation + SunCalc illumination)
 function getLunarPosition(date) {
     // Calculate Julian Date
     const year = date.getUTCFullYear();
@@ -300,9 +299,6 @@ function getLunarPosition(date) {
     
     // Moon's argument of latitude
     const F = (93.272 + 13.229350 * d) % 360;
-    
-    // Longitude of ascending node (not used in simplified calculation)
-    // const omega = (125.04 - 0.052954 * d) % 360;
     
     // Convert to radians
     const toRad = Math.PI / 180;
@@ -360,31 +356,23 @@ function getLunarPosition(date) {
     while (moonLongitude > 180) moonLongitude -= 360;
     while (moonLongitude < -180) moonLongitude += 360;
     
-    // Calculate Sun's longitude for phase calculation
-    const Ls = (280.460 + 0.98564736 * d) % 360;
-    const sunLambda = Ls + 1.915 * Math.sin(MsRad) + 0.020 * Math.sin(2 * MsRad);
+    // Use SunCalc for phase and illumination data
+    const moonIllum = SunCalc.getMoonIllumination(date);
+    const elongation = moonIllum.phase * 360; // Convert 0-1 to 0-360 degrees
     
-    // Calculate phase angle (elongation)
-    let elongation = lambda - sunLambda;
-    if (elongation < 0) elongation += 360;
-    
-    // Calculate illuminated fraction
-    const phaseAngle = 180 - elongation;
-    const illuminatedFraction = (1 + Math.cos(phaseAngle * toRad)) / 2;
+    console.log(`Lunar position: lat=${declination.toFixed(2)}°, lng=${moonLongitude.toFixed(2)}°`);
     
     return {
         lat: declination,
         lng: moonLongitude,
         phase: elongation,
-        // TODO this does not seem to work when >= 0.5
-        // also drawing may be inverted...
-        illuminatedFraction: illuminatedFraction
+        illuminatedFraction: moonIllum.fraction
     };
 }
 
 
 /**
- * Calculate sunrise and sunset times using simplified but accurate algorithm
+ * Calculate sunrise and sunset times using SunCalc library
  * @param {Date} date - The date for which to calculate sunrise/sunset  
  * @param {number} lat - Latitude in degrees
  * @param {number} lng - Longitude in degrees
@@ -395,58 +383,26 @@ function getSunriseSunset(date, lat, lng) {
         return { sunrise: null, sunset: null };
     }
 
-    // Day of year
-    const start = new Date(date.getFullYear(), 0, 0);
-    const diff = date - start;
-    const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
+    // Use SunCalc library for accurate calculations
+    const times = SunCalc.getTimes(date, lat, lng);
     
-    // Solar declination angle
-    const P = Math.asin(0.39795 * Math.cos(0.017214 * (dayOfYear - 173)));
+    const sunrise = times.sunrise;
+    const sunset = times.sunset;
     
-    // Argument for sunrise/sunset
-    const argument = -Math.tan(lat * Math.PI / 180) * Math.tan(P);
-    
-    // Check for polar day/night
-    if (argument < -1) return { sunrise: null, sunset: null, polarDay: true };
-    if (argument > 1) return { sunrise: null, sunset: null, polarNight: true };
-    
-    // Hour angle
-    const hourAngle = Math.acos(argument) * 180 / Math.PI;
-    
-    // Solar times in hours (local solar time)
-    const sunriseHour = 12 - hourAngle / 15;
-    const sunsetHour = 12 + hourAngle / 15;
-    
-    // Convert to UTC by adding longitude correction
-    const sunriseUTC = sunriseHour - lng / 15;
-    const sunsetUTC = sunsetHour - lng / 15;
-    
-    // Create Date objects
-    const sunrise = new Date(date);
-    sunrise.setUTCHours(Math.floor(sunriseUTC), Math.round((sunriseUTC % 1) * 60), 0, 0);
-    
-    const sunset = new Date(date);  
-    sunset.setUTCHours(Math.floor(sunsetUTC), Math.round((sunsetUTC % 1) * 60), 0, 0);
-    
-    // Handle day rollover
-    if (sunriseUTC < 0) {
-        sunrise.setUTCDate(sunrise.getUTCDate() - 1);
-        sunrise.setUTCHours(sunrise.getUTCHours() + 24);
-    } else if (sunriseUTC >= 24) {
-        sunrise.setUTCDate(sunrise.getUTCDate() + 1);
-        sunrise.setUTCHours(sunrise.getUTCHours() - 24);
-    }
-    
-    if (sunsetUTC < 0) {
-        sunset.setUTCDate(sunset.getUTCDate() - 1);
-        sunset.setUTCHours(sunset.getUTCHours() + 24);
-    } else if (sunsetUTC >= 24) {
-        sunset.setUTCDate(sunset.getUTCDate() + 1);
-        sunset.setUTCHours(sunset.getUTCHours() - 24);
+    // Check for invalid times (polar regions)
+    if (isNaN(sunrise.getTime()) || isNaN(sunset.getTime())) {
+        // Determine if it's polar day or night based on sun position
+        const sunPos = SunCalc.getPosition(date, lat, lng);
+        const elevation = sunPos.altitude * 180 / Math.PI; // Convert to degrees
+        
+        if (elevation > 0) {
+            return { sunrise: null, sunset: null, polarDay: true };
+        } else {
+            return { sunrise: null, sunset: null, polarNight: true };
+        }
     }
 
     console.log(`Sunrise/Sunset for ${lat}, ${lng} on ${date.toDateString()}:`, {
-        dayOfYear,
         sunriseUTC: sunrise.toISOString().substr(11, 8) + ' UTC',
         sunsetUTC: sunset.toISOString().substr(11, 8) + ' UTC',
         sunriseLocal: sunrise.toLocaleString(undefined, { timeZone: displayTimezone }),
@@ -475,72 +431,32 @@ function calculateDayLength(sunrise, sunset) {
 }
 
 /**
- * Get Unicode moon phase symbol based on elongation
- * @param {number} elongation - Moon phase elongation in degrees
- * @returns {string} Unicode moon phase symbol
+ * Get moon phase symbol and name based on SunCalc phase value
+ * @param {number} phase - SunCalc phase value (0 = new, 0.25 = first quarter, 0.5 = full, 0.75 = last quarter, 1 = new)
+ * @returns {Object} Object with symbol and name properties
  */
-function getMoonPhaseSymbol(elongation) {
-    if (typeof elongation !== 'number' || isNaN(elongation)) {
-        return "🌑"; // Default to new moon
+function getMoonPhase(phase) {
+    if (typeof phase !== 'number' || isNaN(phase)) {
+        return { symbol: "🌑", name: "New Moon" };
     }
     
-    const normalizedElongation = (elongation % 360 + 360) % 360;
-    
-    if (normalizedElongation < 22.5 || normalizedElongation >= 337.5) {
-        return "🌑"; // New Moon
-    } else if (normalizedElongation < 67.5) {
-        return "🌒"; // Waxing Crescent
-    } else if (normalizedElongation < 112.5) {
-        return "🌓"; // First Quarter
-    } else if (normalizedElongation < 157.5) {
-        return "🌔"; // Waxing Gibbous
-    } else if (normalizedElongation < 202.5) {
-        return "🌕"; // Full Moon
-    } else if (normalizedElongation < 247.5) {
-        return "🌖"; // Waning Gibbous
-    } else if (normalizedElongation < 292.5) {
-        return "🌗"; // Last Quarter
+    // SunCalc phase: 0 = new moon, 0.25 = first quarter, 0.5 = full moon, 0.75 = last quarter, 1 = new moon
+    if (phase < 0.03125 || phase >= 0.96875) {
+        return { symbol: "🌑", name: "New Moon" };
+    } else if (phase < 0.21875) {
+        return { symbol: "🌒", name: "Waxing Crescent" };
+    } else if (phase < 0.28125) {
+        return { symbol: "🌓", name: "First Quarter" };
+    } else if (phase < 0.46875) {
+        return { symbol: "🌔", name: "Waxing Gibbous" };
+    } else if (phase < 0.53125) {
+        return { symbol: "🌕", name: "Full Moon" };
+    } else if (phase < 0.71875) {
+        return { symbol: "🌖", name: "Waning Gibbous" };
+    } else if (phase < 0.78125) {
+        return { symbol: "🌗", name: "Last Quarter" };
     } else {
-        return "🌘"; // Waning Crescent
-    }
-}
-
-/**
-* Calculates the name of the moon phase based on its elongation from the sun.
-* The eight major phases are returned based on standard astronomical divisions.
-*
-* @param {number} elongation - The angular separation in degrees between the Sun and the Moon as seen from Earth.
-* @returns {string} The name of the moon phase (e.g., "New Moon", "Waxing Crescent", etc.), or an error message if the input is invalid.
-*/
-function getMoonPhaseName(elongation) {
-    // First, validate that the input is a number.
-    if (typeof elongation !== 'number' || isNaN(elongation)) {
-        console.error("Invalid input: Elongation must be a number.");
-        return "Invalid input";
-    }
-
-    // Normalize the elongation to a value between 0 and 360 degrees.
-    // This handles negative values or values greater than 360.
-    const normalizedElongation = (elongation % 360 + 360) % 360;
-
-    // Determine the phase based on the normalized elongation.
-    // The ranges are based on dividing the 360-degree cycle into 8 phases of 45 degrees each.
-    if (normalizedElongation < 22.5 || normalizedElongation >= 337.5) {
-        return "New Moon";
-    } else if (normalizedElongation < 67.5) {
-        return "Waxing Crescent";
-    } else if (normalizedElongation < 112.5) {
-        return "First Quarter";
-    } else if (normalizedElongation < 157.5) {
-        return "Waxing Gibbous";
-    } else if (normalizedElongation < 202.5) {
-        return "Full Moon";
-    } else if (normalizedElongation < 247.5) {
-        return "Waning Gibbous";
-    } else if (normalizedElongation < 292.5) {
-        return "Third Quarter";
-    } else { // This covers the range from 292.5 up to 337.5
-        return "Waning Crescent";
+        return { symbol: "🌘", name: "Waning Crescent" };
     }
 }
 
@@ -645,13 +561,12 @@ function updateSolarInfoPanel(date) {
         document.getElementById('dayLength').textContent = '';
     }
     
-    // Update moon phase
-    const moonPos = getLunarPosition(date);
-    const moonSymbol = getMoonPhaseSymbol(moonPos.phase);
-    const moonPhaseName = getMoonPhaseName(moonPos.phase);
+    // Update moon phase using SunCalc directly
+    const moonIllumination = SunCalc.getMoonIllumination(date);
+    const moonPhase = getMoonPhase(moonIllumination.phase);
     
-    document.getElementById('moonSymbol').textContent = moonSymbol;
-    document.getElementById('moonPhaseName').textContent = moonPhaseName;
+    document.getElementById('moonSymbol').textContent = moonPhase.symbol;
+    document.getElementById('moonPhaseName').textContent = moonPhase.name;
 }
 
 // Main drawing function
@@ -1010,12 +925,16 @@ function drawMap() {
     }
     
     document.getElementById('currentTime').textContent = timeDisplay;
-    const moonPhaseName = getMoonPhaseName(moonPos.phase);
-    const illumination = Math.round(moonPos.illuminatedFraction * 100);
+    
+    // Use SunCalc directly for moon info display
+    const moonIllumination = SunCalc.getMoonIllumination(now);
+    const moonPhase = getMoonPhase(moonIllumination.phase);
+    const illumination = Math.round(moonIllumination.fraction * 100);
+    
     document.getElementById('sunPosition').textContent = 
         `Sun: ${sunPos.lat.toFixed(1)}°, ${sunPos.lng.toFixed(1)}°`;
     document.getElementById('moonPosition').textContent = 
-        `Moon: ${moonPos.lat.toFixed(1)}°,${moonPos.lng.toFixed(1)}° (${moonPhaseName}, ${illumination}% illuminated)`;
+        `Moon: ${moonPos.lat.toFixed(1)}°,${moonPos.lng.toFixed(1)}° (${moonPhase.name}, ${illumination}% illuminated)`;
     
     // Update solar info panel
     updateSolarInfoPanel(now);
