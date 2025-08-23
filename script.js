@@ -594,12 +594,22 @@ function drawMap() {
             let color;
             
             if (isGrayscale) {
-                // Simplified 3-shade approach for 3-bit grayscale
+                // Smooth gradient approach for grayscale (same as color mode but grayscale)
                 color = CONFIG.night.grayscale.color;
-                if (elevation < CONFIG.solarElevation.grayscaleDeepNight) {
-                    alpha = CONFIG.night.grayscale.opacity.deepNight; // Dark night (lighter to show map underneath)
-                } else if (elevation < CONFIG.solarElevation.grayscaleTwilight) {
-                    alpha = CONFIG.night.grayscale.opacity.twilight; // Twilight (lighter)
+                if (elevation < CONFIG.solarElevation.deepNight) {
+                    alpha = CONFIG.night.grayscale.opacity.deepNight; // Deep night
+                } else if (elevation < CONFIG.solarElevation.astronomicalTwilight) {
+                    // Astronomical twilight
+                    const factor = (elevation - CONFIG.solarElevation.deepNight) / (CONFIG.solarElevation.astronomicalTwilight - CONFIG.solarElevation.deepNight);
+                    alpha = CONFIG.night.grayscale.opacity.deepNight - ((CONFIG.night.grayscale.opacity.deepNight - 0.4) * factor);
+                } else if (elevation < CONFIG.solarElevation.nauticalTwilight) {
+                    // Nautical/civil twilight
+                    const factor = (elevation - CONFIG.solarElevation.astronomicalTwilight) / (CONFIG.solarElevation.nauticalTwilight - CONFIG.solarElevation.astronomicalTwilight);
+                    alpha = 0.4 - (0.4 - CONFIG.night.grayscale.opacity.twilight) * factor;
+                } else if (elevation < CONFIG.solarElevation.horizon) {
+                    // Very light twilight at horizon
+                    const factor = (elevation - CONFIG.solarElevation.nauticalTwilight) / (CONFIG.solarElevation.horizon - CONFIG.solarElevation.nauticalTwilight);
+                    alpha = CONFIG.night.grayscale.opacity.twilight - (CONFIG.night.grayscale.opacity.twilight * factor);
                 }
             } else {
                 // Original smooth gradient for color displays
