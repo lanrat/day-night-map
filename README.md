@@ -6,13 +6,16 @@ A real-time visualization of day and night regions across the world using accura
 ## Features
 
 - Real-time day/night terminator line based on current UTC time
-- Smooth twilight gradients showing dawn and dusk zones
+- Smooth twilight gradients showing dawn and dusk zones with professional SunCalc integration
 - Solar position indicator showing where the sun is directly overhead
-- Lunar position indicator showing where the moon is directly overhead
-- Accurate moon phase visualization showing current illumination
+- Lunar position indicator showing where the moon is directly overhead with variable size based on distance
+- Accurate moon phase visualization showing current illumination using SunCalc calculations
 - Moon phase name and illumination percentage display
 - Responsive design with normal and minimal viewing modes
-- Grayscale mode optimized for 3-bit displays and e-ink screens
+- 3-column information panel showing date, sunrise/sunset times, and moon phase
+- Enhanced astronomical data including solar noon, golden hour times, and moon rise/set times
+- Location detection via URL parameters or HTML5 Geolocation API
+- Grayscale mode optimized for e-ink displays with smooth gradient transitions
 - Accurate Mercator projection using SVG world map
 
 ## Usage
@@ -30,6 +33,8 @@ All parameters can be combined and used with either query string (`?`) or hash (
 - `grayscale` - Optimized for grayscale/e-ink displays  
 - `timestamp=<value>` - Display map at specific time (Unix timestamp in seconds or milliseconds)
 - `timezone=<value>` - Display date/time in specified timezone (IANA timezone name, defaults to user's local timezone)
+- `lat=<value>` - User latitude for location-based astronomical calculations (-90 to 90)
+- `lon=<value>` - User longitude for location-based astronomical calculations (-180 to 180)
 
 **Examples:**
 
