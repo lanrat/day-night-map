@@ -36,6 +36,37 @@ if (urlParams.has('timezone')) {
 // If no timezone specified, use user's local timezone
 if (!displayTimezone) {
     displayTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    console.log(`No timezone specified, using browser default: ${displayTimezone}`);
+} else {
+    console.log(`Using specified timezone: ${displayTimezone}`);
+}
+
+// Check for location parameters (latitude and longitude)
+let userLatitude = null;
+let userLongitude = null;
+
+if (urlParams.has('lat')) {
+    const lat = parseFloat(urlParams.get('lat'));
+    if (!isNaN(lat) && lat >= -90 && lat <= 90) {
+        userLatitude = lat;
+    }
+} else if (hashParams.has('lat')) {
+    const lat = parseFloat(hashParams.get('lat'));
+    if (!isNaN(lat) && lat >= -90 && lat <= 90) {
+        userLatitude = lat;
+    }
+}
+
+if (urlParams.has('lon')) {
+    const lon = parseFloat(urlParams.get('lon'));
+    if (!isNaN(lon) && lon >= -180 && lon <= 180) {
+        userLongitude = lon;
+    }
+} else if (hashParams.has('lon')) {
+    const lon = parseFloat(hashParams.get('lon'));
+    if (!isNaN(lon) && lon >= -180 && lon <= 180) {
+        userLongitude = lon;
+    }
 }
 
 // Configuration for celestial body sizes and colors
@@ -124,8 +155,49 @@ const CONFIG = {
         horizon: 0,                 // Solar elevation for day/night boundary (degrees)
         grayscaleDeepNight: -6,     // Solar elevation for deep night in grayscale mode (degrees)
         grayscaleTwilight: 0        // Solar elevation for twilight in grayscale mode (degrees)
+    },
+    location: {
+        latitude: userLatitude || null,     // User latitude from URL parameters or geolocation
+        longitude: userLongitude || null,   // User longitude from URL parameters or geolocation
+        isAvailable: false                  // Whether location data is available
     }
 };
+
+// Initialize location data
+function initializeLocation() {
+    // Check if location is already provided via URL parameters
+    if (CONFIG.location.latitude !== null && CONFIG.location.longitude !== null) {
+        CONFIG.location.isAvailable = true;
+        return Promise.resolve();
+    }
+    
+    // Try to get location via Geolocation API
+    if ('geolocation' in navigator) {
+        return new Promise((resolve) => {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    CONFIG.location.latitude = position.coords.latitude;
+                    CONFIG.location.longitude = position.coords.longitude;
+                    CONFIG.location.isAvailable = true;
+                    resolve();
+                },
+                (error) => {
+                    console.warn('Geolocation failed:', error.message);
+                    CONFIG.location.isAvailable = false;
+                    resolve();
+                },
+                {
+                    enableHighAccuracy: false,
+                    timeout: 10000,
+                    maximumAge: 300000 // 5 minutes
+                }
+            );
+        });
+    } else {
+        CONFIG.location.isAvailable = false;
+        return Promise.resolve();
+    }
+}
 
 // Apply modes if requested
 if (isMinimal) {
@@ -312,6 +384,128 @@ function getLunarPosition(date) {
 
 
 /**
+ * Calculate sunrise and sunset times using simplified but accurate algorithm
+ * @param {Date} date - The date for which to calculate sunrise/sunset  
+ * @param {number} lat - Latitude in degrees
+ * @param {number} lng - Longitude in degrees
+ * @returns {Object} Object containing sunrise and sunset times
+ */
+function getSunriseSunset(date, lat, lng) {
+    if (!CONFIG.location.isAvailable) {
+        return { sunrise: null, sunset: null };
+    }
+
+    // Day of year
+    const start = new Date(date.getFullYear(), 0, 0);
+    const diff = date - start;
+    const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
+    
+    // Solar declination angle
+    const P = Math.asin(0.39795 * Math.cos(0.017214 * (dayOfYear - 173)));
+    
+    // Argument for sunrise/sunset
+    const argument = -Math.tan(lat * Math.PI / 180) * Math.tan(P);
+    
+    // Check for polar day/night
+    if (argument < -1) return { sunrise: null, sunset: null, polarDay: true };
+    if (argument > 1) return { sunrise: null, sunset: null, polarNight: true };
+    
+    // Hour angle
+    const hourAngle = Math.acos(argument) * 180 / Math.PI;
+    
+    // Solar times in hours (local solar time)
+    const sunriseHour = 12 - hourAngle / 15;
+    const sunsetHour = 12 + hourAngle / 15;
+    
+    // Convert to UTC by adding longitude correction
+    const sunriseUTC = sunriseHour - lng / 15;
+    const sunsetUTC = sunsetHour - lng / 15;
+    
+    // Create Date objects
+    const sunrise = new Date(date);
+    sunrise.setUTCHours(Math.floor(sunriseUTC), Math.round((sunriseUTC % 1) * 60), 0, 0);
+    
+    const sunset = new Date(date);  
+    sunset.setUTCHours(Math.floor(sunsetUTC), Math.round((sunsetUTC % 1) * 60), 0, 0);
+    
+    // Handle day rollover
+    if (sunriseUTC < 0) {
+        sunrise.setUTCDate(sunrise.getUTCDate() - 1);
+        sunrise.setUTCHours(sunrise.getUTCHours() + 24);
+    } else if (sunriseUTC >= 24) {
+        sunrise.setUTCDate(sunrise.getUTCDate() + 1);
+        sunrise.setUTCHours(sunrise.getUTCHours() - 24);
+    }
+    
+    if (sunsetUTC < 0) {
+        sunset.setUTCDate(sunset.getUTCDate() - 1);
+        sunset.setUTCHours(sunset.getUTCHours() + 24);
+    } else if (sunsetUTC >= 24) {
+        sunset.setUTCDate(sunset.getUTCDate() + 1);
+        sunset.setUTCHours(sunset.getUTCHours() - 24);
+    }
+
+    console.log(`Sunrise/Sunset for ${lat}, ${lng} on ${date.toDateString()}:`, {
+        dayOfYear,
+        sunriseUTC: sunrise.toISOString().substr(11, 8) + ' UTC',
+        sunsetUTC: sunset.toISOString().substr(11, 8) + ' UTC',
+        sunriseLocal: sunrise.toLocaleString(undefined, { timeZone: displayTimezone }),
+        sunsetLocal: sunset.toLocaleString(undefined, { timeZone: displayTimezone })
+    });
+
+    return { sunrise, sunset };
+}
+
+/**
+ * Calculate day length from sunrise and sunset times
+ * @param {Date|null} sunrise - Sunrise time
+ * @param {Date|null} sunset - Sunset time
+ * @returns {string} Formatted day length string
+ */
+function calculateDayLength(sunrise, sunset) {
+    if (!sunrise || !sunset) {
+        return "Unknown";
+    }
+    
+    const diffMs = sunset.getTime() - sunrise.getTime();
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+    return `${hours}h ${minutes}m daylight`;
+}
+
+/**
+ * Get Unicode moon phase symbol based on elongation
+ * @param {number} elongation - Moon phase elongation in degrees
+ * @returns {string} Unicode moon phase symbol
+ */
+function getMoonPhaseSymbol(elongation) {
+    if (typeof elongation !== 'number' || isNaN(elongation)) {
+        return "🌑"; // Default to new moon
+    }
+    
+    const normalizedElongation = (elongation % 360 + 360) % 360;
+    
+    if (normalizedElongation < 22.5 || normalizedElongation >= 337.5) {
+        return "🌑"; // New Moon
+    } else if (normalizedElongation < 67.5) {
+        return "🌒"; // Waxing Crescent
+    } else if (normalizedElongation < 112.5) {
+        return "🌓"; // First Quarter
+    } else if (normalizedElongation < 157.5) {
+        return "🌔"; // Waxing Gibbous
+    } else if (normalizedElongation < 202.5) {
+        return "🌕"; // Full Moon
+    } else if (normalizedElongation < 247.5) {
+        return "🌖"; // Waning Gibbous
+    } else if (normalizedElongation < 292.5) {
+        return "🌗"; // Last Quarter
+    } else {
+        return "🌘"; // Waning Crescent
+    }
+}
+
+/**
 * Calculates the name of the moon phase based on its elongation from the sun.
 * The eight major phases are returned based on standard astronomical divisions.
 *
@@ -399,6 +593,65 @@ function drawCelestialBodyWithWrapping(pixel, drawFunction, wrapThreshold = CONF
     if (pixel.x > canvas.width - wrapThreshold) {
         drawFunction(pixel.x - canvas.width, pixel.y);
     }
+}
+
+/**
+ * Update the solar information panel with current astronomical data
+ * @param {Date} date - Current date/time
+ */
+function updateSolarInfoPanel(date) {
+    // Update date display
+    const dateString = date.toLocaleDateString('en-US', {
+        timeZone: displayTimezone,
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    });
+    document.getElementById('currentDate').textContent = dateString;
+    
+    // Update sun times (sunrise/sunset) if location is available
+    if (CONFIG.location.isAvailable) {
+        const sunTimes = getSunriseSunset(date, CONFIG.location.latitude, CONFIG.location.longitude);
+        
+        if (sunTimes.polarNight) {
+            document.getElementById('sunrise').textContent = '❄️ Polar Night';
+            document.getElementById('sunset').textContent = '';
+            document.getElementById('dayLength').textContent = '0h 0m daylight';
+        } else if (sunTimes.polarDay) {
+            document.getElementById('sunrise').textContent = '☀️ Polar Day';
+            document.getElementById('sunset').textContent = '';
+            document.getElementById('dayLength').textContent = '24h 0m daylight';
+        } else if (sunTimes.sunrise && sunTimes.sunset) {
+            const sunriseStr = sunTimes.sunrise.toLocaleTimeString('en-US', {
+                timeZone: displayTimezone,
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            });
+            const sunsetStr = sunTimes.sunset.toLocaleTimeString('en-US', {
+                timeZone: displayTimezone,
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            });
+            
+            document.getElementById('sunrise').textContent = `↑ ${sunriseStr}`;
+            document.getElementById('sunset').textContent = `↓ ${sunsetStr}`;
+            document.getElementById('dayLength').textContent = calculateDayLength(sunTimes.sunrise, sunTimes.sunset);
+        }
+    } else {
+        document.getElementById('sunrise').textContent = 'Location';
+        document.getElementById('sunset').textContent = 'Unknown';
+        document.getElementById('dayLength').textContent = '';
+    }
+    
+    // Update moon phase
+    const moonPos = getLunarPosition(date);
+    const moonSymbol = getMoonPhaseSymbol(moonPos.phase);
+    const moonPhaseName = getMoonPhaseName(moonPos.phase);
+    
+    document.getElementById('moonSymbol').textContent = moonSymbol;
+    document.getElementById('moonPhaseName').textContent = moonPhaseName;
 }
 
 // Main drawing function
@@ -763,10 +1016,16 @@ function drawMap() {
         `Sun: ${sunPos.lat.toFixed(1)}°, ${sunPos.lng.toFixed(1)}°`;
     document.getElementById('moonPosition').textContent = 
         `Moon: ${moonPos.lat.toFixed(1)}°,${moonPos.lng.toFixed(1)}° (${moonPhaseName}, ${illumination}% illuminated)`;
+    
+    // Update solar info panel
+    updateSolarInfoPanel(now);
 }
 
-// Initial draw and set up auto-refresh (only if no custom timestamp)
-drawMap();
-if (!customTimestamp) {
-    setInterval(drawMap, CONFIG.performance.updateInterval);
-}
+// Initialize location and start the application
+initializeLocation().then(() => {
+    // Initial draw and set up auto-refresh (only if no custom timestamp)
+    drawMap();
+    if (!customTimestamp) {
+        setInterval(drawMap, CONFIG.performance.updateInterval);
+    }
+});

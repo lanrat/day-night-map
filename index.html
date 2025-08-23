@@ -23,6 +23,28 @@
             <div id="moonPosition"></div>
         </div>
         
+        <div class="solar-info-panel" data-pixel-perfect="true">
+            <div class="info-column date-column">
+                <div class="column-label">DATE</div>
+                <div id="currentDate" class="column-value"></div>
+            </div>
+            <div class="info-column sun-column">
+                <div class="column-label">SUN TIMES</div>
+                <div id="sunTimes" class="column-value">
+                    <div id="sunrise"></div>
+                    <div id="sunset"></div>
+                    <div id="dayLength"></div>
+                </div>
+            </div>
+            <div class="info-column moon-column">
+                <div class="column-label">MOON PHASE</div>
+                <div id="moonPhase" class="column-value">
+                    <div id="moonSymbol"></div>
+                    <div id="moonPhaseName"></div>
+                </div>
+            </div>
+        </div>
+        
         <div class="legend">
             <div class="legend-item">
                 <div class="legend-color" style="background-color: rgba(0,0,50,0.7);"></div>
@@ -43,6 +65,6 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=2"></script>
 </body>
 </html>

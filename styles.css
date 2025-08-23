@@ -100,7 +100,7 @@ h1 {
     height: calc(100vh - 60px);
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
 }
 
 .minimal-mode .map-container {
@@ -119,7 +119,7 @@ h1 {
 .minimal-mode #mapCanvas {
     width: 100%;
     height: 100%;
-    object-fit: cover; /* Ensure image fills container properly */
+    object-fit: contain; /* Keep aspect ratio, fit within container */
 }
 
 /* Info box in minimal mode */
@@ -145,6 +145,114 @@ h1 {
     margin: 0;
 }
 
+/* Solar Info Panel Styles */
+.solar-info-panel {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-top: 20px;
+    padding: 20px;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.info-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    min-width: 120px;
+}
+
+.column-label {
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #666;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+}
+
+.column-value {
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.4;
+    color: #000;
+}
+
+.date-column .column-value {
+    text-align: left;
+}
+
+.sun-column .column-value {
+    text-align: center;
+}
+
+.sun-column .column-value div {
+    margin: 2px 0;
+}
+
+.moon-column .column-value {
+    text-align: right;
+}
+
+#moonSymbol {
+    font-size: 24px;
+    margin-bottom: 4px;
+}
+
+#moonPhaseName {
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+/* Minimal mode solar info panel */
+.minimal-mode .solar-info-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: 0;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 0;
+    border-top: 1px solid #e0e0e0;
+    box-shadow: none;
+    max-width: none;
+    gap: 20px;
+    height: 48px;
+    z-index: 100;
+}
+
+.minimal-mode .info-column {
+    min-width: auto;
+    flex: 1;
+}
+
+.minimal-mode .column-label {
+    font-size: 9px;
+    margin-bottom: 4px;
+}
+
+.minimal-mode .column-value {
+    font-size: 14px;
+    line-height: 1.2;
+}
+
+.minimal-mode #moonSymbol {
+    font-size: 18px;
+    margin-bottom: 2px;
+}
+
+.minimal-mode #moonPhaseName {
+    font-size: 12px;
+}
+
 /* Grayscale mode styles for 3-bit displays */
 .grayscale-mode {
     filter: grayscale(100%);
@@ -157,6 +265,18 @@ h1 {
 }
 
 .grayscale-mode .minimal-mode .info {
+    background-color: white;
+    color: black;
+    border-top-color: black;
+}
+
+.grayscale-mode .solar-info-panel {
+    background-color: white;
+    color: black;
+    border-color: black;
+}
+
+.grayscale-mode .minimal-mode .solar-info-panel {
     background-color: white;
     color: black;
     border-top-color: black;
