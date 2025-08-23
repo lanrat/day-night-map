@@ -44,14 +44,38 @@ All parameters can be combined and used with either query string (`?`) or hash (
 - `?timezone=Asia/Tokyo&minimal` - Tokyo time in minimal mode
 - `#minimal&timestamp=1672531200000` - Minimal mode at specific time (milliseconds)
 - `?minimal&grayscale&timestamp=1640995200&timezone=Europe/London` - All parameters combined
+- `?lat=40.7128&lon=-74.0060` - New York City location for sunrise/sunset calculations
+- `?lat=51.5074&lon=-0.1278&timezone=Europe/London` - London coordinates with local timezone
 
 ## Technical Details
 
-The application calculates solar and lunar positions using simplified astronomical formulas and renders day/night regions using HTML5 Canvas with smooth alpha blending for twilight zones. Both the sun and moon positions show where each celestial body is directly overhead on Earth's surface.
+The application uses the professional-grade [SunCalc library](https://github.com/mourner/suncalc) for accurate astronomical calculations combined with custom algorithms for celestial positioning. Solar and lunar positions are calculated using hybrid approaches that leverage SunCalc for complex calculations while maintaining efficient custom code for subsolar/sublunar point positioning.
 
-The moon display includes accurate phase visualization based on its elongation from the sun, showing the correct illuminated fraction with proper waxing/waning orientation. The phase name (New Moon, First Quarter, Full Moon, etc.) and illumination percentage are displayed in the info panel.
+### SunCalc Integration Features
 
-Grayscale mode provides optimized rendering for limited-color displays by using high contrast black and white elements, simplified twilight zones, and distinctive sun/moon icons with clear visual patterns.
+- **Solar calculations**: Sunrise/sunset times, solar noon, golden hour periods, and solar elevation angles
+- **Lunar calculations**: Moon phase, illumination fraction, moonrise/moonset times, and lunar distance for variable sizing
+- **Location support**: Automatic geolocation detection or manual coordinates via URL parameters
+- **Timezone awareness**: Display times in any IANA timezone with fallback to user's local timezone
+
+### Rendering System
+
+The day/night visualization uses HTML5 Canvas with optimized pixel-level rendering:
+
+- **Twilight gradients**: Smooth transitions through astronomical, nautical, and civil twilight zones
+- **Grayscale optimization**: E-ink friendly rendering with smooth gradients (not just 3-shade discrete zones)
+- **Variable moon sizing**: Moon size changes based on actual Earth-Moon distance (perigee vs apogee)
+- **Edge wrapping**: Celestial bodies wrap around map edges for continuous world view
+
+### Information Panel
+
+The 3-column solar information panel displays:
+
+- **Date column**: Current date with day length calculation
+- **Sun column**: Sunrise/sunset times with up/down arrows, plus solar noon and golden hour times
+- **Moon column**: Current phase symbol and name with illumination percentage, plus moonrise/moonset times
+
+Location-dependent calculations require either URL parameters (`lat=` and `lon=`) or browser geolocation permission. Without location data, sunrise/sunset and moon rise/set times display as "Unknown".
 
 The map updates every minute to reflect current conditions. When using the `timestamp` parameter, the map displays a static snapshot of that specific moment and does not auto-refresh.
 
