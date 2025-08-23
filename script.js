@@ -460,27 +460,19 @@ function getMoonPhase(phase) {
     }
 }
 
-// Calculate solar elevation angle
-function getSolarElevation(lat, lng, sunLat, sunLng) {
-    const latRad = lat * Math.PI / 180;
-    const sunLatRad = sunLat * Math.PI / 180;
-    const lngDiff = (lng - sunLng) * Math.PI / 180;
-    
-    const elevation = Math.asin(
-        Math.sin(latRad) * Math.sin(sunLatRad) +
-        Math.cos(latRad) * Math.cos(sunLatRad) * Math.cos(lngDiff)
-    ) * 180 / Math.PI;
-    
-    return elevation;
+// Calculate solar elevation angle using SunCalc
+function getSolarElevation(lat, lng, date) {
+    const sunPos = SunCalc.getPosition(date, lat, lng);
+    return sunPos.altitude * 180 / Math.PI; // Convert from radians to degrees
 }
 
 // Calculate day/night terminator line points
-function getTerminatorPoints(sunPos) {
+function getTerminatorPoints(sunPos, date) {
     const points = [];
     for (let lng = -180; lng <= 180; lng += CONFIG.calculation.terminatorStep) {
         // Find latitude where solar elevation equals 0
         for (let lat = -90; lat <= 90; lat += 1) {
-            const elevation = getSolarElevation(lat, lng, sunPos.lat, sunPos.lng);
+            const elevation = getSolarElevation(lat, lng, date);
             
             // Check if this point is close to the terminator (elevation ≈ 0)
             if (Math.abs(elevation) < 0.5) {
@@ -595,7 +587,7 @@ function drawMap() {
             // Skip invalid latitudes
             if (lat > 85 || lat < -85) continue;
             
-            const elevation = getSolarElevation(lat, lng, sunPos.lat, sunPos.lng);
+            const elevation = getSolarElevation(lat, lng, now);
             
             // Create overlay with different approach for grayscale
             let alpha = 0;
@@ -649,7 +641,7 @@ function drawMap() {
     
     // Draw terminator line
     if (CONFIG.visual.showTerminator){
-        const terminatorPoints = getTerminatorPoints(sunPos);
+        const terminatorPoints = getTerminatorPoints(sunPos, now);
         if (terminatorPoints.length > 1) {
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
             ctx.lineWidth = 2;
@@ -723,18 +715,26 @@ function drawMap() {
     const moonPixel = latLngToPixel(moonPos.lat, moonPos.lng);
     if (moonPixel.y >= 0 && moonPixel.y <= canvas.height) {
         const drawMoon = (x, y) => {
-            // Moon glow
+            // Get moon distance for variable sizing
+            const moonDistance = SunCalc.getMoonPosition(now, 0, 0).distance;
+            // Moon distance varies from ~356,000 km (perigee) to ~407,000 km (apogee)
+            // Scale factor: smaller radius when moon is farther away
+            const avgDistance = 384400; // Average Earth-Moon distance in km
+            const sizeScale = avgDistance / moonDistance;
+            
+            // Moon glow with variable size
             const moonConfig = CONFIG.moon;
-            const moonGradient = ctx.createRadialGradient(x, y, 0, x, y, moonConfig.glowRadius);
+            const scaledGlowRadius = moonConfig.glowRadius * sizeScale;
+            const moonGradient = ctx.createRadialGradient(x, y, 0, x, y, scaledGlowRadius);
             moonGradient.addColorStop(0, moonConfig.glowColor.start);
             moonGradient.addColorStop(1, moonConfig.glowColor.end);
             ctx.fillStyle = moonGradient;
             ctx.beginPath();
-            ctx.arc(x, y, moonConfig.glowRadius, 0, 2 * Math.PI);
+            ctx.arc(x, y, scaledGlowRadius, 0, 2 * Math.PI);
             ctx.fill();
             
-            // Draw moon with phase
-            const moonRadius = CONFIG.moon.radius;
+            // Draw moon with phase and variable size
+            const moonRadius = CONFIG.moon.radius * sizeScale;
             ctx.save();
             ctx.translate(x, y);
             
@@ -931,10 +931,70 @@ function drawMap() {
     const moonPhase = getMoonPhase(moonIllumination.phase);
     const illumination = Math.round(moonIllumination.fraction * 100);
     
-    document.getElementById('sunPosition').textContent = 
-        `Sun: ${sunPos.lat.toFixed(1)}°, ${sunPos.lng.toFixed(1)}°`;
-    document.getElementById('moonPosition').textContent = 
-        `Moon: ${moonPos.lat.toFixed(1)}°,${moonPos.lng.toFixed(1)}° (${moonPhase.name}, ${illumination}% illuminated)`;
+    // Add additional solar and lunar events for non-minimal mode
+    let sunInfoText = `Sun: ${sunPos.lat.toFixed(1)}°, ${sunPos.lng.toFixed(1)}°`;
+    let moonInfoText = `Moon: ${moonPos.lat.toFixed(1)}°,${moonPos.lng.toFixed(1)}° (${moonPhase.name}, ${illumination}% illuminated)`;
+    
+    if (!isMinimal && CONFIG.location.isAvailable) {
+        // Add solar events
+        const solarTimes = SunCalc.getTimes(now, CONFIG.location.latitude, CONFIG.location.longitude);
+        const solarNoon = solarTimes.solarNoon;
+        const goldenHourEnd = solarTimes.goldenHourEnd;
+        const goldenHour = solarTimes.goldenHour;
+        
+        if (solarNoon && !isNaN(solarNoon.getTime())) {
+            const noonStr = solarNoon.toLocaleTimeString(undefined, { 
+                timeZone: displayTimezone, 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            sunInfoText += `\nSolar Noon: ${noonStr}`;
+        }
+        
+        if (goldenHourEnd && goldenHour && !isNaN(goldenHourEnd.getTime()) && !isNaN(goldenHour.getTime())) {
+            const morningGolden = goldenHourEnd.toLocaleTimeString(undefined, { 
+                timeZone: displayTimezone, 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            const eveningGolden = goldenHour.toLocaleTimeString(undefined, { 
+                timeZone: displayTimezone, 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            sunInfoText += `\nGolden Hour: ${morningGolden} - ${eveningGolden}`;
+        }
+        
+        // Add lunar events
+        const moonTimes = SunCalc.getMoonTimes(now, CONFIG.location.latitude, CONFIG.location.longitude);
+        
+        if (moonTimes.rise && !isNaN(moonTimes.rise.getTime())) {
+            const moonriseStr = moonTimes.rise.toLocaleTimeString(undefined, { 
+                timeZone: displayTimezone, 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            moonInfoText += `\nMoonrise: ${moonriseStr}`;
+        }
+        
+        if (moonTimes.set && !isNaN(moonTimes.set.getTime())) {
+            const moonsetStr = moonTimes.set.toLocaleTimeString(undefined, { 
+                timeZone: displayTimezone, 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            moonInfoText += `\nMoonset: ${moonsetStr}`;
+        }
+        
+        if (moonTimes.alwaysUp) {
+            moonInfoText += `\nMoon: Always visible`;
+        } else if (moonTimes.alwaysDown) {
+            moonInfoText += `\nMoon: Below horizon`;
+        }
+    }
+    
+    document.getElementById('sunPosition').textContent = sunInfoText;
+    document.getElementById('moonPosition').textContent = moonInfoText;
     
     // Update solar info panel
     updateSolarInfoPanel(now);
