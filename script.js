@@ -41,6 +41,25 @@ if (!displayTimezone) {
     console.log(`Using specified timezone: ${displayTimezone}`);
 }
 
+// Check for show location dot parameter
+const showLocationDot = urlParams.has('showloc') || hashParams.has('showloc') || 
+                       window.location.search.includes('showloc') || 
+                       window.location.hash.includes('showloc');
+
+// Check for projection type parameter (default to equirectangular to match SVG)
+let projectionType = 'equirectangular';
+if (urlParams.has('projection')) {
+    const proj = urlParams.get('projection').toLowerCase();
+    if (proj === 'mercator' || proj === 'equirectangular') {
+        projectionType = proj;
+    }
+} else if (hashParams.has('projection')) {
+    const proj = hashParams.get('projection').toLowerCase();
+    if (proj === 'mercator' || proj === 'equirectangular') {
+        projectionType = proj;
+    }
+}
+
 // Check for location parameters (latitude and longitude)
 let userLatitude = null;
 let userLongitude = null;
@@ -159,7 +178,20 @@ const CONFIG = {
     location: {
         latitude: userLatitude || null,     // User latitude from URL parameters or geolocation
         longitude: userLongitude || null,   // User longitude from URL parameters or geolocation
-        isAvailable: false                  // Whether location data is available
+        isAvailable: false,                 // Whether location data is available
+        showDot: showLocationDot,           // Whether to show location dot on map
+        dot: {
+            radius: 4,                      // Radius of location dot (pixels)
+            color: {
+                fill: '#FF4444',            // Fill color of location dot in color mode
+                stroke: '#FFFFFF',          // Stroke color of location dot in color mode
+                grayscale: {
+                    fill: 'black',          // Fill color of location dot in grayscale mode
+                    stroke: 'white'         // Stroke color of location dot in grayscale mode
+                }
+            },
+            strokeWidth: 2                  // Width of stroke around location dot
+        }
     }
 };
 
@@ -207,6 +239,31 @@ if (isGrayscale) {
     document.documentElement.classList.add('grayscale-mode');
 }
 
+// Update location legend based on showloc parameter and mode
+function updateLocationLegend() {
+    const locationLegend = document.getElementById('locationLegend');
+    
+    if (CONFIG.location.showDot && CONFIG.location.isAvailable) {
+        // Show the location legend
+        locationLegend.style.display = 'flex';
+        
+        // Update colors based on current mode
+        const legendColor = locationLegend.querySelector('.legend-color');
+        const dotConfig = CONFIG.location.dot;
+        
+        if (isGrayscale) {
+            legendColor.style.backgroundColor = dotConfig.color.grayscale.fill;
+            legendColor.style.borderColor = dotConfig.color.grayscale.stroke;
+        } else {
+            legendColor.style.backgroundColor = dotConfig.color.fill;
+            legendColor.style.borderColor = dotConfig.color.stroke;
+        }
+    } else {
+        // Hide the location legend
+        locationLegend.style.display = 'none';
+    }
+}
+
 const canvas = document.getElementById('mapCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -236,12 +293,23 @@ if (isMinimal) {
     });
 }
 
-// Convert latitude/longitude to canvas coordinates (Mercator projection)
+// Convert latitude/longitude to canvas coordinates with projection support
 function latLngToPixel(lat, lng) {
+    // Longitude is the same for both projections
     const x = (lng + 180) * (canvas.width / 360);
-    const latRad = lat * Math.PI / 180;
-    const mercatorN = Math.log(Math.tan((Math.PI / 4) + (latRad / 2)));
-    const y = (canvas.height / 2) - (canvas.width * mercatorN / (2 * Math.PI));
+    
+    let y;
+    if (projectionType === 'equirectangular') {
+        // Simple linear mapping for equirectangular projection
+        // This matches most world map SVGs including the BlankMap-Equirectangular.svg
+        y = (90 - lat) * (canvas.height / 180);
+    } else {
+        // Mercator projection (original implementation)
+        const latRad = lat * Math.PI / 180;
+        const mercatorN = Math.log(Math.tan((Math.PI / 4) + (latRad / 2)));
+        y = (canvas.height / 2) - (canvas.width * mercatorN / (2 * Math.PI));
+    }
+    
     return { x, y };
 }
 
@@ -581,8 +649,16 @@ function drawMap() {
         for (let y = 0; y < canvas.height; y += pixelSize) {
             // Convert pixel back to lat/lng
             const lng = (x / canvas.width) * 360 - 180;
-            const mercatorN = (canvas.height / 2 - y) * 2 * Math.PI / canvas.width;
-            const lat = Math.atan(Math.sinh(mercatorN)) * 180 / Math.PI;
+            
+            let lat;
+            if (projectionType === 'equirectangular') {
+                // Simple linear mapping for equirectangular projection
+                lat = 90 - (y / canvas.height) * 180;
+            } else {
+                // Mercator projection (original implementation)
+                const mercatorN = (canvas.height / 2 - y) * 2 * Math.PI / canvas.width;
+                lat = Math.atan(Math.sinh(mercatorN)) * 180 / Math.PI;
+            }
             
             // Skip invalid latitudes
             if (lat > 85 || lat < -85) continue;
@@ -894,6 +970,38 @@ function drawMap() {
         drawCelestialBodyWithWrapping(moonPixel, drawMoon);
     }
     
+    // Draw location dot if enabled and location is available
+    if (CONFIG.location.showDot && CONFIG.location.isAvailable && 
+        CONFIG.location.latitude !== null && CONFIG.location.longitude !== null) {
+        const locationPixel = latLngToPixel(CONFIG.location.latitude, CONFIG.location.longitude);
+        
+        if (locationPixel.y >= 0 && locationPixel.y <= canvas.height) {
+            const drawLocationDot = (x, y) => {
+                const dotConfig = CONFIG.location.dot;
+                const radius = dotConfig.radius;
+                const strokeWidth = dotConfig.strokeWidth;
+                
+                if (isGrayscale) {
+                    // Grayscale location dot
+                    ctx.fillStyle = dotConfig.color.grayscale.fill;
+                    ctx.strokeStyle = dotConfig.color.grayscale.stroke;
+                } else {
+                    // Color location dot
+                    ctx.fillStyle = dotConfig.color.fill;
+                    ctx.strokeStyle = dotConfig.color.stroke;
+                }
+                
+                ctx.lineWidth = strokeWidth;
+                ctx.beginPath();
+                ctx.arc(x, y, radius, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.stroke();
+            };
+            
+            drawCelestialBodyWithWrapping(locationPixel, drawLocationDot);
+        }
+    }
+    
     
     // Update info display
     let timeDisplay;
@@ -1010,6 +1118,9 @@ function drawMap() {
 
 // Initialize location and start the application
 initializeLocation().then(() => {
+    // Update location legend after location is determined
+    updateLocationLegend();
+    
     // Initial draw and set up auto-refresh (only if no custom timestamp)
     drawMap();
     if (!customTimestamp) {
