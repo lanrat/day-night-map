@@ -17,8 +17,10 @@ A real-time visualization of day and night regions across the world using accura
 - 3-column information panel showing date, sunrise/sunset times, and moon phase
 - Enhanced astronomical data including solar noon, golden hour times, and moon rise/set times
 - Location detection via URL parameters or HTML5 Geolocation API
+- Optional location marker showing the calculation point on the map
 - Grayscale mode optimized for e-ink displays with smooth gradient transitions
-- Accurate Mercator projection using SVG world map
+- Dual projection support: Equirectangular (default) and Mercator projections
+- Accurate coordinate mapping with selectable projection types to match different world map formats
 
 ## Usage
 
@@ -37,6 +39,8 @@ All parameters can be combined and used with either query string (`?`) or hash (
 - `timezone=<value>` - Display date/time in specified timezone (IANA timezone name, defaults to user's local timezone)
 - `lat=<value>` - User latitude for location-based astronomical calculations (-90 to 90)
 - `lon=<value>` - User longitude for location-based astronomical calculations (-180 to 180)
+- `showloc` - Display a location marker dot at the specified lat/lon coordinates on the map
+- `projection=<value>` - Map projection type: `equirectangular` (default, matches most world map SVGs) or `mercator` (Web Mercator projection)
 
 **Examples:**
 
@@ -48,6 +52,10 @@ All parameters can be combined and used with either query string (`?`) or hash (
 - `?minimal&grayscale&timestamp=1640995200&timezone=Europe/London` - All parameters combined
 - `?lat=40.7128&lon=-74.0060` - New York City location for sunrise/sunset calculations
 - `?lat=51.5074&lon=-0.1278&timezone=Europe/London` - London coordinates with local timezone
+- `?lat=37.7749&lon=-122.4194&showloc` - San Francisco with location marker dot
+- `?lat=35.6762&lon=139.6503&showloc&grayscale` - Tokyo with location marker in grayscale mode
+- `?projection=mercator` - Use Mercator projection instead of equirectangular
+- `?lat=40.7589&lon=-73.9851&showloc&projection=mercator&minimal` - Times Square with Mercator projection in minimal mode
 
 ## Technical Details
 
@@ -68,6 +76,16 @@ The day/night visualization uses HTML5 Canvas with optimized pixel-level renderi
 - **Grayscale optimization**: E-ink friendly rendering with smooth gradients (not just 3-shade discrete zones)
 - **Variable moon sizing**: Moon size changes based on actual Earth-Moon distance (perigee vs apogee)
 - **Edge wrapping**: Celestial bodies wrap around map edges for continuous world view
+- **Location markers**: Optional red location dot (black in grayscale) with white border to mark calculation coordinates
+- **Dynamic legend**: Location marker automatically appears in legend when `showloc` parameter is used
+
+### Map Projections
+
+The application supports two coordinate projection systems:
+
+- **Equirectangular** (default): Simple linear lat/lon mapping that matches most world map SVG files and images
+- **Mercator**: Web Mercator projection commonly used in web mapping applications
+- **Automatic detection**: Defaults to equirectangular to match the included world map SVG, but can be switched via URL parameter
 
 ### Information Panel
 
