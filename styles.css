@@ -48,15 +48,18 @@ h1 {
 }
 
 .info {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
     margin-top: 20px;
-    padding: 15px;
-    background-color: #f8f9fa;
+    padding: 20px;
     border: 1px solid #e0e0e0;
     border-radius: 8px;
-    display: inline-block;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
     white-space: pre-line;
-    font-size: 3cqh;
 }
 
 .legend {
@@ -80,9 +83,29 @@ h1 {
     border: 1px solid #ccc;
 }
 
+/* Footer styles */
+.footer {
+    margin-top: 30px;
+    padding: 20px;
+    text-align: center;
+    border-top: 1px solid #e0e0e0;
+    color: #666;
+    font-size: 14px;
+}
+
+.footer a {
+    color: #0066cc;
+    text-decoration: none;
+}
+
+.footer a:hover {
+    text-decoration: underline;
+}
+
 /* Minimal mode styles */
 .minimal-mode h1,
-.minimal-mode .legend {
+.minimal-mode .legend,
+.minimal-mode .footer {
     display: none;
 }
 
@@ -126,25 +149,7 @@ h1 {
 
 /* Info box in minimal mode */
 .minimal-mode .info {
-    /* position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    margin: 0;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 20px;
-    height: 40px; */
     display: none;
-}
-
-.minimal-mode .info > div {
-    margin: 0;
 }
 
 /* Solar Info Panel Styles */
@@ -154,7 +159,6 @@ h1 {
     gap: 40px;
     margin-top: 20px;
     padding: 20px;
-    background-color: #000000ff;
     border: 1px solid #e0e0e0;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -235,12 +239,12 @@ h1 {
 }
 
 .minimal-mode .column-label {
-    font-size: 9px;
+    font-size: 12px;
     margin-bottom: 4px;
 }
 
 .minimal-mode .column-value {
-    font-size: 14px;
+    font-size: 16px;
     line-height: 1.2;
 }
 
@@ -250,7 +254,7 @@ h1 {
 }
 
 .minimal-mode #moonPhaseName {
-    font-size: 12px;
+    font-size: 14px;
 }
 
 /* Grayscale mode styles for 3-bit displays */
@@ -261,7 +265,7 @@ h1 {
 .grayscale-mode .info {
     background-color: white;
     color: black;
-    /* border-color: black; */
+    border-color: black;
 }
 
 .grayscale-mode .minimal-mode .info {

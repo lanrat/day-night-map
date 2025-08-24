@@ -933,9 +933,7 @@ function drawMap() {
             timeDisplay = `UTC Time:\n${timeString}`;
         }
     }
-    
-    document.getElementById('currentTime').textContent = timeDisplay;
-    
+        
     // Use SunCalc directly for moon info display
     const moonIllumination = SunCalc.getMoonIllumination(now);
     const moonPhase = getMoonPhase(moonIllumination.phase);
@@ -943,7 +941,7 @@ function drawMap() {
     
     // Add additional solar and lunar events for non-minimal mode
     let sunInfoText = `Sun: ${sunPos.lat.toFixed(1)}°, ${sunPos.lng.toFixed(1)}°`;
-    let moonInfoText = `Moon: ${moonPos.lat.toFixed(1)}°,${moonPos.lng.toFixed(1)}° (${moonPhase.name}, ${illumination}% illuminated)`;
+    let moonInfoText = `Moon: ${moonPos.lat.toFixed(1)}°,${moonPos.lng.toFixed(1)}°\n${moonPhase.name}, ${illumination}% illuminated`;
     
     if (!isMinimal && CONFIG.location.isAvailable) {
         // Add solar events
