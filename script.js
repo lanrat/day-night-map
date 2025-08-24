@@ -729,6 +729,38 @@ function drawMap() {
     // Render the image data
     ctx.putImageData(imageData, 0, 0);
     
+    // Draw location dot after night overlay but before sun/moon (so it's above map but below celestial bodies)
+    if (CONFIG.location.showDot && CONFIG.location.isAvailable && 
+        CONFIG.location.latitude !== null && CONFIG.location.longitude !== null) {
+        const locationPixel = latLngToPixel(CONFIG.location.latitude, CONFIG.location.longitude);
+        
+        if (locationPixel.y >= 0 && locationPixel.y <= canvas.height) {
+            const drawLocationDot = (x, y) => {
+                const dotConfig = CONFIG.location.dot;
+                const radius = dotConfig.radius;
+                const strokeWidth = dotConfig.strokeWidth;
+                
+                if (isGrayscale) {
+                    // Grayscale location dot
+                    ctx.fillStyle = dotConfig.color.grayscale.fill;
+                    ctx.strokeStyle = dotConfig.color.grayscale.stroke;
+                } else {
+                    // Color location dot
+                    ctx.fillStyle = dotConfig.color.fill;
+                    ctx.strokeStyle = dotConfig.color.stroke;
+                }
+                
+                ctx.lineWidth = strokeWidth;
+                ctx.beginPath();
+                ctx.arc(x, y, radius, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.stroke();
+            };
+            
+            drawCelestialBodyWithWrapping(locationPixel, drawLocationDot);
+        }
+    }
+    
     // Draw terminator line
     if (CONFIG.visual.showTerminator){
         const terminatorPoints = getTerminatorPoints(sunPos, now);
@@ -973,39 +1005,6 @@ function drawMap() {
         
         drawCelestialBodyWithWrapping(moonPixel, drawMoon);
     }
-    
-    // Draw location dot if enabled and location is available
-    if (CONFIG.location.showDot && CONFIG.location.isAvailable && 
-        CONFIG.location.latitude !== null && CONFIG.location.longitude !== null) {
-        const locationPixel = latLngToPixel(CONFIG.location.latitude, CONFIG.location.longitude);
-        
-        if (locationPixel.y >= 0 && locationPixel.y <= canvas.height) {
-            const drawLocationDot = (x, y) => {
-                const dotConfig = CONFIG.location.dot;
-                const radius = dotConfig.radius;
-                const strokeWidth = dotConfig.strokeWidth;
-                
-                if (isGrayscale) {
-                    // Grayscale location dot
-                    ctx.fillStyle = dotConfig.color.grayscale.fill;
-                    ctx.strokeStyle = dotConfig.color.grayscale.stroke;
-                } else {
-                    // Color location dot
-                    ctx.fillStyle = dotConfig.color.fill;
-                    ctx.strokeStyle = dotConfig.color.stroke;
-                }
-                
-                ctx.lineWidth = strokeWidth;
-                ctx.beginPath();
-                ctx.arc(x, y, radius, 0, 2 * Math.PI);
-                ctx.fill();
-                ctx.stroke();
-            };
-            
-            drawCelestialBodyWithWrapping(locationPixel, drawLocationDot);
-        }
-    }
-    
     
     // Update info display
     let timeDisplay;
