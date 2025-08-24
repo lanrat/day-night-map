@@ -660,8 +660,12 @@ function drawMap() {
                 lat = Math.atan(Math.sinh(mercatorN)) * 180 / Math.PI;
             }
             
-            // Skip invalid latitudes
-            if (lat > 85 || lat < -85) continue;
+            // Skip invalid latitudes for Mercator projection only
+            if (projectionType === 'mercator') {
+                // Mercator has mathematical limits around ±85°
+                if (lat > 85 || lat < -85) continue;
+            }
+            // For equirectangular, render the full latitude range to match the SVG map
             
             const elevation = getSolarElevation(lat, lng, now);
             
