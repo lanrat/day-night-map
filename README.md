@@ -3,6 +3,8 @@
 
 A real-time visualization of day and night regions across the world using accurate solar and lunar positioning calculations.
 
+![Day Night Map Screenshot](map.png)
+
 ## Features
 
 - Real-time day/night terminator line based on current UTC time
