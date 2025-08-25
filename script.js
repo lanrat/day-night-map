@@ -13,6 +13,9 @@ const hideSun = urlParams.has('nosun') || hashParams.has('nosun') ||
 const hideMoon = urlParams.has('nomoon') || hashParams.has('nomoon') || 
                 window.location.search.includes('nomoon') || 
                 window.location.hash.includes('nomoon');
+const use24Hour = urlParams.has('hour24') || hashParams.has('hour24') || 
+                 window.location.search.includes('hour24') || 
+                 window.location.hash.includes('hour24');
 
 // Check for timestamp parameter (accepts Unix timestamp in seconds or milliseconds)
 let customTimestamp = null;
@@ -198,6 +201,9 @@ const CONFIG = {
             },
             strokeWidth: 2                  // Width of stroke around location dot
         }
+    },
+    time: {
+        use24Hour: use24Hour || false       // Use 24-hour format (defaults to 12-hour format)
     }
 };
 
@@ -622,13 +628,13 @@ function updateSolarInfoPanel(date) {
                 timeZone: displayTimezone,
                 hour: 'numeric',
                 minute: '2-digit',
-                hour12: true
+                hour12: !CONFIG.time.use24Hour
             });
             const sunsetStr = sunTimes.sunset.toLocaleTimeString('en-US', {
                 timeZone: displayTimezone,
                 hour: 'numeric',
                 minute: '2-digit',
-                hour12: true
+                hour12: !CONFIG.time.use24Hour
             });
             
             document.getElementById('sunrise').textContent = `↑ ${sunriseStr}`;
@@ -1053,7 +1059,8 @@ function drawMap() {
                 day: 'numeric',
                 hour: '2-digit',
                 minute: '2-digit',
-                timeZoneName: 'short'
+                timeZoneName: 'short',
+                hour12: !CONFIG.time.use24Hour
             });
             timeDisplay = `Current Time:\n${timeString}`;
         }
@@ -1089,7 +1096,8 @@ function drawMap() {
             const noonStr = solarNoon.toLocaleTimeString(undefined, { 
                 timeZone: displayTimezone, 
                 hour: '2-digit', 
-                minute: '2-digit' 
+                minute: '2-digit',
+                hour12: !CONFIG.time.use24Hour
             });
             sunInfoText += `\nSolar Noon: ${noonStr}`;
         }
@@ -1098,12 +1106,14 @@ function drawMap() {
             const morningGolden = goldenHourEnd.toLocaleTimeString(undefined, { 
                 timeZone: displayTimezone, 
                 hour: '2-digit', 
-                minute: '2-digit' 
+                minute: '2-digit',
+                hour12: !CONFIG.time.use24Hour
             });
             const eveningGolden = goldenHour.toLocaleTimeString(undefined, { 
                 timeZone: displayTimezone, 
                 hour: '2-digit', 
-                minute: '2-digit' 
+                minute: '2-digit',
+                hour12: !CONFIG.time.use24Hour
             });
             sunInfoText += `\nGolden Hour: ${morningGolden} - ${eveningGolden}`;
         }
@@ -1115,7 +1125,8 @@ function drawMap() {
             const moonriseStr = moonTimes.rise.toLocaleTimeString(undefined, { 
                 timeZone: displayTimezone, 
                 hour: '2-digit', 
-                minute: '2-digit' 
+                minute: '2-digit',
+                hour12: !CONFIG.time.use24Hour
             });
             moonInfoText += `\nMoonrise: ${moonriseStr}`;
         }
@@ -1124,7 +1135,8 @@ function drawMap() {
             const moonsetStr = moonTimes.set.toLocaleTimeString(undefined, { 
                 timeZone: displayTimezone, 
                 hour: '2-digit', 
-                minute: '2-digit' 
+                minute: '2-digit',
+                hour12: !CONFIG.time.use24Hour
             });
             moonInfoText += `\nMoonset: ${moonsetStr}`;
         }

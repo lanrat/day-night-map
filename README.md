@@ -43,6 +43,7 @@ All parameters can be combined and used with either query string (`?`) or hash (
 - `nosun` - Hide the sun position marker from both the map and legend
 - `nomoon` - Hide the moon position marker from both the map and legend
 - `projection=<value>` - Map projection type: `equirectangular` (default, matches most world map SVGs) or `mercator` (Web Mercator projection)
+- `hour24` - Display all times in 24-hour format instead of 12-hour AM/PM format
 
 **Examples:**
 
@@ -52,8 +53,11 @@ All parameters can be combined and used with either query string (`?`) or hash (
 - `?timezone=Asia/Tokyo&minimal` - Tokyo time in minimal mode
 - `#minimal&timestamp=1672531200000` - Minimal mode at specific time (milliseconds)
 - `?minimal&grayscale&timestamp=1640995200&timezone=Europe/London` - All parameters combined
+- `?hour24` - Display all times in 24-hour format
+- `?hour24&timezone=Europe/Berlin` - 24-hour format with Berlin timezone
 - `?lat=40.7128&lon=-74.0060` - New York City location for sunrise/sunset calculations
 - `?lat=51.5074&lon=-0.1278&timezone=Europe/London` - London coordinates with local timezone
+- `?lat=35.6762&lon=139.6503&hour24&timezone=Asia/Tokyo` - Tokyo location with 24-hour format
 - `?lat=37.7749&lon=-122.4194&showloc` - San Francisco with location marker dot
 - `?lat=35.6762&lon=139.6503&showloc&grayscale` - Tokyo with location marker in grayscale mode
 - `?nosun` - Day/night map without sun marker (minimal display)
