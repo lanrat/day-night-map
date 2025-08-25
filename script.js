@@ -7,6 +7,12 @@ const isMinimal = urlParams.has('minimal') || hashParams.has('minimal') ||
 const isGrayscale = urlParams.has('grayscale') || hashParams.has('grayscale') || 
                    window.location.search.includes('grayscale') || 
                    window.location.hash.includes('grayscale');
+const hideSun = urlParams.has('nosun') || hashParams.has('nosun') || 
+               window.location.search.includes('nosun') || 
+               window.location.hash.includes('nosun');
+const hideMoon = urlParams.has('nomoon') || hashParams.has('nomoon') || 
+                window.location.search.includes('nomoon') || 
+                window.location.hash.includes('nomoon');
 
 // Check for timestamp parameter (accepts Unix timestamp in seconds or milliseconds)
 let customTimestamp = null;
@@ -261,6 +267,20 @@ function updateLocationLegend() {
     } else {
         // Hide the location legend
         locationLegend.style.display = 'none';
+    }
+}
+
+// Update legend visibility based on celestial body parameters
+function updateCelestialLegend() {
+    const sunLegend = document.getElementById('sunLegend');
+    const moonLegend = document.getElementById('moonLegend');
+    
+    if (sunLegend) {
+        sunLegend.style.display = hideSun ? 'none' : 'flex';
+    }
+    
+    if (moonLegend) {
+        moonLegend.style.display = hideMoon ? 'none' : 'flex';
     }
 }
 
@@ -776,10 +796,11 @@ function drawMap() {
         }
     }
     
-    // Draw sun position with wrapping
-    const sunPixel = latLngToPixel(sunPos.lat, sunPos.lng);
-    if (sunPixel.y >= 0 && sunPixel.y <= canvas.height) {
-        const drawSun = (x, y) => {
+    // Draw sun position with wrapping (only if not hidden)
+    if (!hideSun) {
+        const sunPixel = latLngToPixel(sunPos.lat, sunPos.lng);
+        if (sunPixel.y >= 0 && sunPixel.y <= canvas.height) {
+            const drawSun = (x, y) => {
             if (isGrayscale) {
                 // High contrast sun for grayscale
                 const sunConfig = CONFIG.sun.grayscale;
@@ -830,13 +851,15 @@ function drawMap() {
             }
         };
         
-        drawCelestialBodyWithWrapping(sunPixel, drawSun);
+            drawCelestialBodyWithWrapping(sunPixel, drawSun);
+        }
     }
     
-    // Draw moon position with wrapping
-    const moonPixel = latLngToPixel(moonPos.lat, moonPos.lng);
-    if (moonPixel.y >= 0 && moonPixel.y <= canvas.height) {
-        const drawMoon = (x, y) => {
+    // Draw moon position with wrapping (only if not hidden)
+    if (!hideMoon) {
+        const moonPixel = latLngToPixel(moonPos.lat, moonPos.lng);
+        if (moonPixel.y >= 0 && moonPixel.y <= canvas.height) {
+            const drawMoon = (x, y) => {
             // Get moon distance for variable sizing
             const moonDistance = SunCalc.getMoonPosition(now, 0, 0).distance;
             // Moon distance varies from ~356,000 km (perigee) to ~407,000 km (apogee)
@@ -1003,7 +1026,8 @@ function drawMap() {
             ctx.stroke();
         };
         
-        drawCelestialBodyWithWrapping(moonPixel, drawMoon);
+            drawCelestialBodyWithWrapping(moonPixel, drawMoon);
+        }
     }
     
     // Update info display
@@ -1123,6 +1147,9 @@ function drawMap() {
 initializeLocation().then(() => {
     // Update location legend after location is determined
     updateLocationLegend();
+    
+    // Update celestial body legend visibility
+    updateCelestialLegend();
     
     // Initial draw and set up auto-refresh (only if no custom timestamp)
     drawMap();

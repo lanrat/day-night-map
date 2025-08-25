@@ -40,6 +40,8 @@ All parameters can be combined and used with either query string (`?`) or hash (
 - `lat=<value>` - User latitude for location-based astronomical calculations (-90 to 90)
 - `lon=<value>` - User longitude for location-based astronomical calculations (-180 to 180)
 - `showloc` - Display a location marker dot at the specified lat/lon coordinates on the map
+- `nosun` - Hide the sun position marker from both the map and legend
+- `nomoon` - Hide the moon position marker from both the map and legend
 - `projection=<value>` - Map projection type: `equirectangular` (default, matches most world map SVGs) or `mercator` (Web Mercator projection)
 
 **Examples:**
@@ -54,6 +56,10 @@ All parameters can be combined and used with either query string (`?`) or hash (
 - `?lat=51.5074&lon=-0.1278&timezone=Europe/London` - London coordinates with local timezone
 - `?lat=37.7749&lon=-122.4194&showloc` - San Francisco with location marker dot
 - `?lat=35.6762&lon=139.6503&showloc&grayscale` - Tokyo with location marker in grayscale mode
+- `?nosun` - Day/night map without sun marker (minimal display)
+- `?nomoon` - Day/night map without moon marker
+- `?nosun&nomoon` - Clean day/night map with no celestial body markers
+- `?minimal&grayscale&nosun&nomoon` - Ultra-minimal grayscale display with only day/night regions
 - `?projection=mercator` - Use Mercator projection instead of equirectangular
 - `?lat=40.7589&lon=-73.9851&showloc&projection=mercator&minimal` - Times Square with Mercator projection in minimal mode
 
