@@ -147,9 +147,55 @@ h1 {
     object-fit: contain; /* Keep aspect ratio, fit within container */
 }
 
-/* Info box in minimal mode */
+/* Info box in minimal mode - hidden by default */
 .minimal-mode .info {
     display: none;
+}
+
+/* Hide coordinate text in minimal mode (show times only) */
+.minimal-mode #sunPosition,
+.minimal-mode #moonPosition {
+    display: none;
+}
+
+/* Show sun/moon details panel when viewport has extra vertical space */
+@media (max-aspect-ratio: 3/2) {
+    .minimal-mode .info {
+        display: flex;
+        width: 100%;
+        margin: 0;
+        padding: clamp(4px, 1vh, 10px) clamp(8px, 2.5vw, 24px);
+        border: none;
+        border-radius: 0;
+        border-top: 1px solid #e0e0e0;
+        box-shadow: none;
+        max-width: none;
+        gap: clamp(8px, 3vw, 24px);
+        height: 12vh;
+        flex-shrink: 0;
+        box-sizing: border-box;
+    }
+
+    .minimal-mode .info .info-column {
+        min-width: auto;
+        flex: 1;
+    }
+
+    .minimal-mode .info .column-label {
+        font-size: clamp(8px, 2.2vmin, 14px);
+        margin-bottom: clamp(2px, 0.5vh, 6px);
+    }
+
+    .minimal-mode .info .column-value {
+        font-size: clamp(10px, 3vmin, 20px);
+        line-height: 1.2;
+    }
+
+    /* Adjust map container to reserve space for both panels */
+    .minimal-mode .map-container {
+        height: calc(100vh - 15vh - 12vh);
+        max-width: calc((100vh - 15vh - 12vh) * 2);
+    }
 }
 
 /* Solar Info Panel Styles */

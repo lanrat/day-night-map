@@ -1081,73 +1081,94 @@ function drawMap() {
     const moonPhase = getMoonPhase(moonIllumination.phase);
     const illumination = Math.round(moonIllumination.fraction * 100);
     
-    // Add additional solar and lunar events for non-minimal mode
+    // Sun/moon position text (coordinates)
     let sunInfoText = `Sun: ${sunPos.lat.toFixed(1)}°, ${sunPos.lng.toFixed(1)}°`;
     let moonInfoText = `Moon: ${moonPos.lat.toFixed(1)}°,${moonPos.lng.toFixed(1)}°\n${moonPhase.name}, ${illumination}% illuminated`;
-    
-    if (!isMinimal && CONFIG.location.isAvailable) {
-        // Add solar events
+
+    // Solar and lunar event times (always calculated when location is available)
+    const solarNoonEl = document.getElementById('solarNoon');
+    const goldenHourEl = document.getElementById('goldenHour');
+    const moonriseEl = document.getElementById('moonrise');
+    const moonsetEl = document.getElementById('moonset');
+
+    if (CONFIG.location.isAvailable) {
+        // Solar events
         const solarTimes = SunCalc.getTimes(now, CONFIG.location.latitude, CONFIG.location.longitude);
         const solarNoon = solarTimes.solarNoon;
         const goldenHourEnd = solarTimes.goldenHourEnd;
         const goldenHour = solarTimes.goldenHour;
-        
+
         if (solarNoon && !isNaN(solarNoon.getTime())) {
-            const noonStr = solarNoon.toLocaleTimeString(undefined, { 
-                timeZone: displayTimezone, 
-                hour: '2-digit', 
+            const noonStr = solarNoon.toLocaleTimeString(undefined, {
+                timeZone: displayTimezone,
+                hour: '2-digit',
                 minute: '2-digit',
                 hour12: !CONFIG.time.use24Hour
             });
-            sunInfoText += `\nSolar Noon: ${noonStr}`;
+            solarNoonEl.textContent = `Solar Noon: ${noonStr}`;
+        } else {
+            solarNoonEl.textContent = '';
         }
-        
+
         if (goldenHourEnd && goldenHour && !isNaN(goldenHourEnd.getTime()) && !isNaN(goldenHour.getTime())) {
-            const morningGolden = goldenHourEnd.toLocaleTimeString(undefined, { 
-                timeZone: displayTimezone, 
-                hour: '2-digit', 
+            const morningGolden = goldenHourEnd.toLocaleTimeString(undefined, {
+                timeZone: displayTimezone,
+                hour: '2-digit',
                 minute: '2-digit',
                 hour12: !CONFIG.time.use24Hour
             });
-            const eveningGolden = goldenHour.toLocaleTimeString(undefined, { 
-                timeZone: displayTimezone, 
-                hour: '2-digit', 
+            const eveningGolden = goldenHour.toLocaleTimeString(undefined, {
+                timeZone: displayTimezone,
+                hour: '2-digit',
                 minute: '2-digit',
                 hour12: !CONFIG.time.use24Hour
             });
-            sunInfoText += `\nGolden Hour: ${morningGolden} - ${eveningGolden}`;
+            goldenHourEl.textContent = `Golden: ${morningGolden} - ${eveningGolden}`;
+        } else {
+            goldenHourEl.textContent = '';
         }
-        
-        // Add lunar events
+
+        // Lunar events
         const moonTimes = SunCalc.getMoonTimes(now, CONFIG.location.latitude, CONFIG.location.longitude);
-        
+
         if (moonTimes.rise && !isNaN(moonTimes.rise.getTime())) {
-            const moonriseStr = moonTimes.rise.toLocaleTimeString(undefined, { 
-                timeZone: displayTimezone, 
-                hour: '2-digit', 
+            const moonriseStr = moonTimes.rise.toLocaleTimeString(undefined, {
+                timeZone: displayTimezone,
+                hour: '2-digit',
                 minute: '2-digit',
                 hour12: !CONFIG.time.use24Hour
             });
-            moonInfoText += `\nMoonrise: ${moonriseStr}`;
+            moonriseEl.textContent = `↑ ${moonriseStr}`;
+        } else {
+            moonriseEl.textContent = '';
         }
-        
+
         if (moonTimes.set && !isNaN(moonTimes.set.getTime())) {
-            const moonsetStr = moonTimes.set.toLocaleTimeString(undefined, { 
-                timeZone: displayTimezone, 
-                hour: '2-digit', 
+            const moonsetStr = moonTimes.set.toLocaleTimeString(undefined, {
+                timeZone: displayTimezone,
+                hour: '2-digit',
                 minute: '2-digit',
                 hour12: !CONFIG.time.use24Hour
             });
-            moonInfoText += `\nMoonset: ${moonsetStr}`;
+            moonsetEl.textContent = `↓ ${moonsetStr}`;
+        } else {
+            moonsetEl.textContent = '';
         }
-        
+
         if (moonTimes.alwaysUp) {
-            moonInfoText += `\nMoon: Always visible`;
+            moonriseEl.textContent = 'Always visible';
+            moonsetEl.textContent = '';
         } else if (moonTimes.alwaysDown) {
-            moonInfoText += `\nMoon: Below horizon`;
+            moonriseEl.textContent = 'Below horizon';
+            moonsetEl.textContent = '';
         }
+    } else {
+        solarNoonEl.textContent = '';
+        goldenHourEl.textContent = '';
+        moonriseEl.textContent = '';
+        moonsetEl.textContent = '';
     }
-    
+
     document.getElementById('sunPosition').textContent = sunInfoText;
     document.getElementById('moonPosition').textContent = moonInfoText;
     
