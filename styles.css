@@ -133,8 +133,8 @@ h1 {
     border: none;
     box-shadow: none;
     width: 100%;
-    height: calc(100vh - 73px); /* Reserve 73px for info panel (48px + 24px padding + 1px border) */
-    max-width: calc((100vh - 73px) * 2); /* Maintain 2:1 aspect ratio */
+    height: calc(100vh - 15vh); /* Reserve space for responsive info panel */
+    max-width: calc((100vh - 15vh) * 2); /* Maintain 2:1 aspect ratio */
     max-height: calc(100vw / 2); /* If width is constrained, maintain ratio */
     overflow: hidden; /* Hide content beyond edges */
     aspect-ratio: 2 / 1;
@@ -221,14 +221,14 @@ h1 {
 .minimal-mode .solar-info-panel {
     width: 100%;
     margin: 0;
-    padding: 8px 20px;
+    padding: clamp(4px, 1.5vh, 12px) clamp(8px, 2.5vw, 24px);
     border: none;
     border-radius: 0;
     border-top: 1px solid #e0e0e0;
     box-shadow: none;
     max-width: none;
-    gap: 20px;
-    height: 60px;
+    gap: clamp(8px, 3vw, 24px);
+    height: 15vh;
     flex-shrink: 0;
     box-sizing: border-box;
 }
@@ -239,22 +239,22 @@ h1 {
 }
 
 .minimal-mode .column-label {
-    font-size: 12px;
-    margin-bottom: 4px;
+    font-size: clamp(8px, 2.2vmin, 14px);
+    margin-bottom: clamp(2px, 0.5vh, 6px);
 }
 
 .minimal-mode .column-value {
-    font-size: 16px;
+    font-size: clamp(10px, 3vmin, 20px);
     line-height: 1.2;
 }
 
 .minimal-mode #moonSymbol {
-    font-size: 18px;
-    margin-bottom: 2px;
+    font-size: clamp(12px, 3.5vmin, 24px);
+    margin-bottom: clamp(1px, 0.3vh, 4px);
 }
 
 .minimal-mode #moonPhaseName {
-    font-size: 14px;
+    font-size: clamp(9px, 2.5vmin, 16px);
 }
 
 /* Grayscale mode styles for 3-bit displays */
